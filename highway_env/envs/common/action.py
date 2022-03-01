@@ -8,7 +8,7 @@ from highway_env import utils
 from highway_env.utils import Vector
 from highway_env.vehicle.dynamics import BicycleVehicle
 from highway_env.vehicle.kinematics import Vehicle
-from highway_env.vehicle.controller import MDPVehicle
+from highway_env.vehicle.controller import MDPVehicle, DecisionMakingVehicle
 
 if TYPE_CHECKING:
     from highway_env.envs.common.abstract import AbstractEnv
@@ -254,6 +254,68 @@ class MultiAgentAction(ActionType):
             action_type.act(agent_action)
 
 
+
+class DecisionMakingAction(ActionType):
+    
+    """
+    High-level decision making action set
+    """
+
+    ACTIONS_ALL = {
+        0: 'ACC',
+        1: 'OVERTAKE',
+        2: 'RIGHT-MOST_LANE'
+    }
+    """A mapping of action indexes to labels."""
+
+    ACTIONS_CTRL = {
+        0: 'ACC'
+    }
+    """A mapping of control (on-off) actions indexed to labels."""
+
+    ACTIONS_LAT = {
+        0: 'OVERTAKE',
+        1: 'RIGHT-MOST_LANE'
+    }
+    """A mapping of lateral action indexes to labels."""
+
+    def __init__(self,
+                 env: 'AbstractEnv',
+                 control: bool = True,
+                 lateral: bool = True,
+                 target_speeds: Optional[Vector] = None,
+                 **kwargs) -> None:
+        """
+        Create a discrete action space of meta-actions.
+
+        :param env: the environment
+        :param control: include control actions
+        :param lateral: include lateral actions
+        :param target_speeds: the list of speeds the vehicle is able to track
+        """
+        super().__init__(env)
+        self.control = control
+        self.lateral = lateral
+        self.target_speeds = np.array(target_speeds) if target_speeds is not None else DecisionMakingVehicle.DEFAULT_TARGET_SPEEDS
+        self.actions = self.ACTIONS_ALL if control and lateral \
+            else self.ACTIONS_CTRL if control \
+            else self.ACTIONS_LAT if lateral \
+            else None
+        if self.actions is None:
+            raise ValueError("At least controlled or lateral actions must be included")
+        self.actions_indexes = {v: k for k, v in self.actions.items()}
+
+    def space(self) -> spaces.Space:
+        return spaces.Discrete(len(self.actions))
+
+    @property
+    def vehicle_class(self) -> Callable:
+        return functools.partial(DecisionMakingVehicle, target_speeds=self.target_speeds)
+
+    def act(self, action: int) -> None:
+        self.controlled_vehicle.act(self.actions[action])
+
+
 def action_factory(env: 'AbstractEnv', config: dict) -> ActionType:
     if config["type"] == "ContinuousAction":
         return ContinuousAction(env, **config)
@@ -263,5 +325,7 @@ def action_factory(env: 'AbstractEnv', config: dict) -> ActionType:
         return DiscreteMetaAction(env, **config)
     elif config["type"] == "MultiAgentAction":
         return MultiAgentAction(env, **config)
+    elif config["type"] == "DecisionMakingAction":
+        return DecisionMakingAction(env, **config)
     else:
         raise ValueError("Unknown action type")

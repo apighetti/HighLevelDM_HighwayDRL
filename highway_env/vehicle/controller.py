@@ -313,3 +313,73 @@ class MDPVehicle(ControlledVehicle):
                 if (t % int(trajectory_timestep / dt)) == 0:
                     states.append(copy.deepcopy(v))
         return states
+
+
+##### TO-DO 
+class DecisionMakingVehicle(MDPVehicle):
+    """A controlled vehicle which performs high-level decision making actions."""
+
+    def __init__(self,
+                 road: Road,
+                 position: List[float],
+                 heading: float = 0,
+                 speed: float = 0,
+                 target_lane_index: Optional[LaneIndex] = None,
+                 target_speed: Optional[float] = None,
+                 target_speeds: Optional[Vector] = None,
+                 route: Optional[Route] = None) -> None:
+        """
+        Initializes an DecisionMakingVehicle
+
+        """
+        super().__init__(road, position, heading, speed, target_lane_index, target_speed, target_speeds, route)
+
+    def act(self, action: Union[dict, str] = None) -> None:
+        """
+        Perform a high-level action.
+
+        - If the action is a decision making-level action,  choose speed from the allowed discrete range.
+        - Else, forward action to the ControlledVehicle handler.
+
+        :param action: a high-level action
+        """
+        if action == "ACC":
+            # DO SOMETHING
+            print("ACC")
+        elif action == "OVERTAKE":
+            # DO SOMETHING
+            print("OVERTAKE")
+            super().act("LANE_LEFT")
+            super().act("FASTER")
+            super().act("LANE_RIGHT")
+        elif action == "RIGHT-MOST_LANE":
+            # DO SOMETHING
+            print("RIGHT-MOST LANE")
+        else:
+            super().act(action)
+            return
+        super().act()
+
+    def predict_trajectory(self, actions: List, action_duration: float, trajectory_timestep: float, dt: float) \
+            -> List[ControlledVehicle]:
+        """
+        Predict the future trajectory of the vehicle given a sequence of actions.
+
+        :param actions: a sequence of future actions.
+        :param action_duration: the duration of each action.
+        :param trajectory_timestep: the duration between each save of the vehicle state.
+        :param dt: the timestep of the simulation
+        :return: the sequence of future states
+        """
+        states = []
+        v = copy.deepcopy(self)
+        t = 0
+        for action in actions:
+            v.act(action)  # High-level decision
+            for _ in range(int(action_duration / dt)):
+                t += 1
+                v.act()  # Low-level control action
+                v.step(dt)
+                if (t % int(trajectory_timestep / dt)) == 0:
+                    states.append(copy.deepcopy(v))
+        return states
