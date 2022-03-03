@@ -349,9 +349,25 @@ class DecisionMakingVehicle(MDPVehicle):
         elif action == "OVERTAKE":
             # DO SOMETHING
             print("OVERTAKE")
-            super().act("LANE_LEFT")
-            super().act("FASTER")
-            super().act("LANE_RIGHT")
+
+            if self.lane_index[2] > 0:
+                front_vehicle_init , _ = self.road.neighbour_vehicles(self, self.lane_index)
+                left_li = (self.lane_index[0], self.lane_index[1], self.lane_index[2] - 1)
+                _, rear_vehicle_left = self.road.neighbour_vehicles(self, left_li)
+                overtake_gap = (self.position[0] + self.LENGTH) - (rear_vehicle_left.position[0] + rear_vehicle_left.LENGTH)
+
+                if(front_vehicle_init.speed < self.speed and self.speed > rear_vehicle_left and overtake_gap >= 25):
+                    super().act("LANE_LEFT")
+                    right_li = (self.lane_index[0], self.lane_index[1], self.lane_index[2] + 1)
+                    _, rear_vehicle_right = self.road.neighbour_vehicles(self, right_li)
+                
+                    while(front_vehicle_init != rear_vehicle_right):
+                        super().act("FASTER")
+                    
+                    reenter_gap = (self.position[0] + self.LENGTH) - (rear_vehicle_right.position[0] + rear_vehicle_right.LENGTH)
+                    if(reenter_gap >= 25):
+                        super().act("LANE_RIGHT")
+
         elif action == "RIGHT-MOST_LANE":
             # DO SOMETHING
             print("RIGHT-MOST LANE")
