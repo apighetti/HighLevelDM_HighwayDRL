@@ -1,4 +1,6 @@
+from pickle import TRUE
 from typing import List, Tuple, Union, Optional
+from xmlrpc.client import Boolean
 
 import numpy as np
 import copy
@@ -231,7 +233,7 @@ class MDPVehicle(ControlledVehicle):
         self.speed_index = self.speed_to_index(self.target_speed)
         self.target_speed = self.index_to_speed(self.speed_index)
 
-    def act(self, action: Union[dict, str] = None) -> None:
+    def act(self, action: Union[dict, str] = None) -> Boolean:
         """
         Perform a high-level action.
 
@@ -246,10 +248,11 @@ class MDPVehicle(ControlledVehicle):
             self.speed_index = self.speed_to_index(self.speed) - 1
         else:
             super().act(action)
-            return
+            return True
         self.speed_index = int(np.clip(self.speed_index, 0, self.target_speeds.size - 1))
         self.target_speed = self.index_to_speed(self.speed_index)
         super().act()
+        return True
 
     def index_to_speed(self, index: int) -> float:
         """
@@ -351,22 +354,37 @@ class DecisionMakingVehicle(MDPVehicle):
             print("OVERTAKE")
 
             if self.lane_index[2] > 0:
+                print("ENTRY POINT 1")
                 front_vehicle_init , _ = self.road.neighbour_vehicles(self, self.lane_index)
                 left_li = (self.lane_index[0], self.lane_index[1], self.lane_index[2] - 1)
-                _, rear_vehicle_left = self.road.neighbour_vehicles(self, left_li)
-                overtake_gap = (self.position[0] + self.LENGTH) - (rear_vehicle_left.position[0] + rear_vehicle_left.LENGTH)
+                # front_vehicle_left, rear_vehicle_left = self.road.neighbour_vehicles(self, left_li)
+                print(f"\nFront vehicle speed: {front_vehicle_init.speed}, My speed: {self.speed}\n")
+                if(front_vehicle_init.speed < self.speed):
+                    print("ENTRY POINT 2")
 
-                if(front_vehicle_init.speed < self.speed and self.speed > rear_vehicle_left and overtake_gap >= 25):
-                    super().act("LANE_LEFT")
-                    right_li = (self.lane_index[0], self.lane_index[1], self.lane_index[2] + 1)
-                    _, rear_vehicle_right = self.road.neighbour_vehicles(self, right_li)
+                    # if(rear_vehicle_left):
+                    #     overtake_gap = (self.position[0] + self.LENGTH) - (rear_vehicle_left.position[0] + rear_vehicle_left.LENGTH)
+                    #     if(self.speed < rear_vehicle_left.speed or overtake_gap <= 25):
+                    #         while():
+                    #             super().act("SLOWER")
+                    print(f"Previous lane index: {self.lane_index[2]}")
+
+                    if(super().act("LANE_LEFT")):
+                        print(f"Current lane index: {self.lane_index[2]}")
+
+
+                    # right_li = (self.lane_index[0], self.lane_index[1], self.lane_index[2] + 1)
+                    # _, rear_vehicle_right = self.road.neighbour_vehicles(self, right_li)
+
+
+                    # print(f"\nAfter LANE_LEFT:\nFront vehicle init: {front_vehicle_init}, Rear vehicle right: {rear_vehicle_right}\n")
                 
-                    while(front_vehicle_init != rear_vehicle_right):
-                        super().act("FASTER")
+                    # while(front_vehicle_init != rear_vehicle_right):
+                    #     super().act("FASTER")
                     
-                    reenter_gap = (self.position[0] + self.LENGTH) - (rear_vehicle_right.position[0] + rear_vehicle_right.LENGTH)
-                    if(reenter_gap >= 25):
-                        super().act("LANE_RIGHT")
+                    # reenter_gap = (self.position[0] + self.LENGTH) - (rear_vehicle_right.position[0] + rear_vehicle_right.LENGTH)
+                    # if(reenter_gap >= 25):
+                    #     super().act("LANE_RIGHT")
 
         elif action == "RIGHT-MOST_LANE":
             # DO SOMETHING

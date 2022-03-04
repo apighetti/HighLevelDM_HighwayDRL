@@ -28,7 +28,7 @@ class DecisionMakingEnv(AbstractEnv):
             "action": {
                 "type": "DecisionMakingAction",
             },
-            "lanes_count": 4,
+            "lanes_count": 8,
             "vehicles_count": 30,
             "controlled_vehicles": 1,
             "initial_lane_id": None,
@@ -112,5 +112,5 @@ class DecisionMakingEnv(AbstractEnv):
 
 register(
     id='dm-env-v0',
-    entry_point='highway_env.envs:DmEnv',
+    entry_point='highway_env.envs:DecisionMakingEnv',
 )
