@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Callable, List, Optional
 import numpy as np
 import pygame
 
-from highway_env.envs.common.action import ActionType, DiscreteMetaAction, ContinuousAction
+from highway_env.envs.common.action import ActionType, DecisionMakingAction, DiscreteMetaAction, ContinuousAction
 from highway_env.road.graphics import WorldSurface, RoadGraphics
 from highway_env.vehicle.graphics import VehicleGraphics
 
@@ -171,8 +171,22 @@ class EventHandler(object):
         """
         if isinstance(action_type, DiscreteMetaAction):
             cls.handle_discrete_action_event(action_type, event)
+        elif isinstance(action_type, DecisionMakingAction): # filter for decision making actions
+            cls.handle_decision_making_action_event(action_type, event)
         elif action_type.__class__ == ContinuousAction:
             cls.handle_continuous_action_event(action_type, event)
+
+
+    
+    @classmethod # Handle decision making actions manual inputs
+    def handle_decision_making_action_event(cls, action_type: DecisionMakingAction, event: pygame.event.EventType) -> None:
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_RIGHT and action_type.control:
+                action_type.act(action_type.actions_indexes["ACC"])
+            if event.key == pygame.K_LEFT and action_type.lateral:
+                action_type.act(action_type.actions_indexes["RIGHT-MOST_LANE"])
+            if event.key == pygame.K_DOWN and action_type.lateral:
+                action_type.act(action_type.actions_indexes["OVERTAKE"])
 
     @classmethod
     def handle_discrete_action_event(cls, action_type: DiscreteMetaAction, event: pygame.event.EventType) -> None:
