@@ -369,9 +369,9 @@ class DecisionMakingVehicle(MDPVehicle):
                     #         while():
                     #             super().act("SLOWER")
                     super().act("LANE_LEFT")
+                    print(self.target_lane_index[2])
                     # right_li = (self.lane_index[0], self.lane_index[1], self.lane_index[2] + 1)
                     # _, rear_vehicle_right = self.road.neighbour_vehicles(self, right_li)
-
 
                     # print(f"\nAfter LANE_LEFT:\nFront vehicle init: {front_vehicle_init}, Rear vehicle right: {rear_vehicle_right}\n")
                 
@@ -388,7 +388,7 @@ class DecisionMakingVehicle(MDPVehicle):
         else:
             super().act(action)
             return
-        super().act()
+        # super().act()
 
     def predict_trajectory(self, actions: List, action_duration: float, trajectory_timestep: float, dt: float) \
             -> List[ControlledVehicle]:

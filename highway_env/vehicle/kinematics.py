@@ -3,11 +3,11 @@ import numpy as np
 import copy
 from collections import deque
 
+import highway_env
 from highway_env import utils
 from highway_env.road.road import Road, LaneIndex
 from highway_env.vehicle.objects import RoadObject, Obstacle, Landmark
 from highway_env.utils import Vector
-
 
 class Vehicle(RoadObject):
 
@@ -142,6 +142,8 @@ class Vehicle(RoadObject):
     def on_state_update(self) -> None:
         if self.road:
             self.lane_index = self.road.network.get_closest_lane_index(self.position, self.heading)
+            # if(type(self) == highway_env.vehicle.controller.DecisionMakingVehicle):
+            #     print(f"lane index: {self.lane_index[2]}")
             self.lane = self.road.network.get_lane(self.lane_index)
             if self.road.record_history:
                 self.history.appendleft(self.create_from(self))
