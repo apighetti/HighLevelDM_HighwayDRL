@@ -348,8 +348,24 @@ class DecisionMakingVehicle(MDPVehicle):
         :param action: a high-level action
         """
         if action == "ACC":
-            # DO SOMETHING
+            front_vehicle , _ = self.road.neighbour_vehicles(self, self.lane_index)
+            
+            if(front_vehicle):
+                distance = self.lane_distance_to(front_vehicle, self.lane_index)
+                print("Distance from ego vehicle and front vehicle: ", str(distance))
+                print("Your speed: ", str(self.speed))
+                print("Front vehicle speed :", str(front_vehicle.speed))
+                other_projected_speed = front_vehicle.speed * np.dot(front_vehicle.direction, self.direction)
+                time_to_collision = distance / utils.not_zero(self.speed - other_projected_speed)
+                print("Time to collision :", str(time_to_collision))
+                
+                while(time_to_collision < 4):
+                    super.act("SLOWER")
+                     
+            else:
+                super.act()
             print("ACC")
+            
         elif action == "OVERTAKE":
             # DO SOMETHING
             print("OVERTAKE")
