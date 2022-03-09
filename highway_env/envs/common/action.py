@@ -300,7 +300,7 @@ class DecisionMakingAction(ActionType):
         super().__init__(env)
         self.control = control
         self.lateral = lateral
-        self.target_speeds = np.array(target_speeds) if target_speeds is not None else DecisionMakingVehicle.DEFAULT_TARGET_SPEEDS
+        self.target_speeds = np.array(target_speeds) if target_speeds is not None else MDPVehicle.DEFAULT_TARGET_SPEEDS
         self.front_vehicle = front_vehicle
         self.ttc = ttc
         self.acc_flag = acc_flag

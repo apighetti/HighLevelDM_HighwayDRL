@@ -206,7 +206,7 @@ class ControlledVehicle(Vehicle):
 class MDPVehicle(ControlledVehicle):
 
     """A controlled vehicle with a specified discrete range of allowed target speeds."""
-    DEFAULT_TARGET_SPEEDS = np.linspace(20, 30, 40)
+    DEFAULT_TARGET_SPEEDS = np.linspace(20, 30, 20)
 
     def __init__(self,
                  road: Road,
@@ -443,7 +443,6 @@ class DecisionMakingVehicle(MDPVehicle):
     def step(self, dt: float) -> None:
         if(self.acc_flag):
             self.acc_on()
-            print(f"my speed: {self.speed}")
         super().step(dt)
 
     def predict_trajectory(self, actions: List, action_duration: float, trajectory_timestep: float, dt: float) \
