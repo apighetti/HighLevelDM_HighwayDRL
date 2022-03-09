@@ -331,7 +331,9 @@ class DecisionMakingVehicle(MDPVehicle):
                  target_lane_index: Optional[LaneIndex] = None,
                  target_speed: Optional[float] = None,
                  target_speeds: Optional[Vector] = None,
-                 route: Optional[Route] = None) -> None:
+                 route: Optional[Route] = None,
+                 front_vehicle: Optional[Vehicle] = None,
+                 ttc: Optional[float] = None) -> None:
         """
         Initializes an DecisionMakingVehicle
 
@@ -342,30 +344,25 @@ class DecisionMakingVehicle(MDPVehicle):
         """
         Perform a high-level action.
 
-        - If the action is a decision making-level action,  choose speed from the allowed discrete range.
+        - If the action is a decision making-level action, choose speed from the allowed discrete range.
         - Else, forward action to the ControlledVehicle handler.
 
         :param action: a high-level action
         """
         if action == "ACC":
-            front_vehicle , _ = self.road.neighbour_vehicles(self, self.lane_index)
-            
-            if(front_vehicle):
-                distance = self.lane_distance_to(front_vehicle, self.lane_index)
-                print("Distance from ego vehicle and front vehicle: ", str(distance))
-                print("Your speed: ", str(self.speed))
-                print("Front vehicle speed :", str(front_vehicle.speed))
-                other_projected_speed = front_vehicle.speed * np.dot(front_vehicle.direction, self.direction)
-                time_to_collision = distance / utils.not_zero(self.speed - other_projected_speed)
-                print("Time to collision :", str(time_to_collision))
-                
-                while(time_to_collision < 4):
-                    super.act("SLOWER")
-                     
+            self.front_vehicle = self.get_front_vehicle()
+            if(self.front_vehicle):
+                self.ttc = self.get_ttc(self.front_vehicle)
+                if(self.ttc < 10 and self.ttc > 0):
+                    super().act("SLOWER")
+                else:
+                    super().act("FASTER")
+                print(f"My speed: {self.speed}")
+                print(f"front_vehicle: {self.front_vehicle}")
+                print("Time to collision :", str(self.ttc))
             else:
-                super.act()
-            print("ACC")
-            
+                super().act()
+                
         elif action == "OVERTAKE":
             # DO SOMETHING
             print("OVERTAKE")
@@ -404,7 +401,17 @@ class DecisionMakingVehicle(MDPVehicle):
         else:
             super().act(action)
             return
-        # super().act()
+        super().act()
+
+    def get_front_vehicle(self) -> Vehicle:
+        front_vehicle , _ = self.road.neighbour_vehicles(self, self.lane_index)
+        return front_vehicle
+
+    def get_ttc(self, front_vehicle: Vehicle) -> float:
+        distance = self.lane_distance_to(front_vehicle, self.lane)
+        other_projected_speed = front_vehicle.speed * np.dot(front_vehicle.direction, self.direction)
+        time_to_collision = distance / utils.not_zero(self.speed - other_projected_speed)
+        return time_to_collision
 
     def predict_trajectory(self, actions: List, action_duration: float, trajectory_timestep: float, dt: float) \
             -> List[ControlledVehicle]:
