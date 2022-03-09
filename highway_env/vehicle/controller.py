@@ -206,7 +206,7 @@ class ControlledVehicle(Vehicle):
 class MDPVehicle(ControlledVehicle):
 
     """A controlled vehicle with a specified discrete range of allowed target speeds."""
-    DEFAULT_TARGET_SPEEDS = np.linspace(20, 30, 3)
+    DEFAULT_TARGET_SPEEDS = np.linspace(20, 30, 40)
 
     def __init__(self,
                  road: Road,
@@ -246,7 +246,7 @@ class MDPVehicle(ControlledVehicle):
         if action == "FASTER":
             self.speed_index = self.speed_to_index(self.speed) + 1
         elif action == "SLOWER":
-            self.speed_index = self.speed_to_index(self.speed) - 1
+            self.speed_index = self.speed_to_index(self.speed) - 5
         else:
             super().act(action)
 
@@ -273,6 +273,7 @@ class MDPVehicle(ControlledVehicle):
         :param speed: an input speed [m/s]
         :return: the index of the closest speed allowed []
         """
+
         x = (speed - self.target_speeds[0]) / (self.target_speeds[-1] - self.target_speeds[0])
         return np.int(np.clip(np.round(x * (self.target_speeds.size - 1)), 0, self.target_speeds.size - 1))
 
@@ -333,12 +334,18 @@ class DecisionMakingVehicle(MDPVehicle):
                  target_speeds: Optional[Vector] = None,
                  route: Optional[Route] = None,
                  front_vehicle: Optional[Vehicle] = None,
-                 ttc: Optional[float] = None) -> None:
+                 ttc: Optional[float] = None,
+                 acc_flag: Optional[Boolean] = False,
+                 distance: Optional[float] = None) -> None:
         """
         Initializes an DecisionMakingVehicle
 
         """
         super().__init__(road, position, heading, speed, target_lane_index, target_speed, target_speeds, route)
+        self.front_vehicle = front_vehicle
+        self.ttc = ttc
+        self.acc_flag = acc_flag
+        self.distance = distance
 
     def act(self, action: Union[dict, str] = None) -> None:
         """
@@ -350,18 +357,17 @@ class DecisionMakingVehicle(MDPVehicle):
         :param action: a high-level action
         """
         if action == "ACC":
-            self.front_vehicle = self.get_front_vehicle()
-            if(self.front_vehicle):
-                self.ttc = self.get_ttc(self.front_vehicle)
-                if(self.ttc < 10 and self.ttc > 0):
-                    super().act("SLOWER")
-                else:
-                    super().act("FASTER")
-                print(f"My speed: {self.speed}")
-                print(f"front_vehicle: {self.front_vehicle}")
-                print("Time to collision :", str(self.ttc))
+
+            if(not self.acc_flag):
+                self.acc_flag = True
+                print("ACC ON")
             else:
-                super().act()
+                self.acc_flag = False
+                print("ACC OFF")
+        
+            print(f"My speed: {self.speed}")
+            print(f"front_vehicle: {self.front_vehicle}")
+            print("Time to collision :", str(self.ttc))
                 
         elif action == "OVERTAKE":
             # DO SOMETHING
@@ -407,11 +413,38 @@ class DecisionMakingVehicle(MDPVehicle):
         front_vehicle , _ = self.road.neighbour_vehicles(self, self.lane_index)
         return front_vehicle
 
-    def get_ttc(self, front_vehicle: Vehicle) -> float:
+    def get_ttc_distance(self, front_vehicle: Vehicle) -> float:
         distance = self.lane_distance_to(front_vehicle, self.lane)
         other_projected_speed = front_vehicle.speed * np.dot(front_vehicle.direction, self.direction)
         time_to_collision = distance / utils.not_zero(self.speed - other_projected_speed)
-        return time_to_collision
+        return distance, time_to_collision
+
+    def get_safe_distance(self) -> float:
+        return (self.speed * 3.6 / 10)**2
+
+    def acc_on(self) -> None:
+        self.front_vehicle = self.get_front_vehicle()
+
+        if(self.front_vehicle):
+            self.distance, self.ttc = self.get_ttc_distance(self.front_vehicle)
+            if((self.ttc > 12.5 or self.ttc < 0) and (self.distance > self.get_safe_distance())):
+                super().act("FASTER")
+                print(f"going faster, ttc: {self.ttc}")
+            elif (self.ttc < 12.5 and self.ttc > 11.5 and self.distance > self.get_safe_distance()):
+                super().act("IDLE")
+                print(f"idle, ttc: {self.ttc}")
+            else:
+                super().act("SLOWER")
+                print(f"going slower, ttc: {self.ttc}")
+
+        else:
+            super().act()
+
+    def step(self, dt: float) -> None:
+        if(self.acc_flag):
+            self.acc_on()
+            print(f"my speed: {self.speed}")
+        super().step(dt)
 
     def predict_trajectory(self, actions: List, action_duration: float, trajectory_timestep: float, dt: float) \
             -> List[ControlledVehicle]:

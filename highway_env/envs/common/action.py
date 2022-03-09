@@ -1,6 +1,7 @@
 import functools
 from itertools import product
 from typing import TYPE_CHECKING, Optional, Union, Tuple, Callable
+from xmlrpc.client import Boolean
 from gym import spaces
 import numpy as np
 
@@ -284,6 +285,9 @@ class DecisionMakingAction(ActionType):
                  control: bool = True,
                  lateral: bool = True,
                  target_speeds: Optional[Vector] = None,
+                 front_vehicle: Optional[Vehicle] = None,
+                 ttc: Optional[float] = None,
+                 acc_flag: Optional[Boolean] = False,
                  **kwargs) -> None:
         """
         Create a discrete action space of meta-actions.
@@ -297,6 +301,9 @@ class DecisionMakingAction(ActionType):
         self.control = control
         self.lateral = lateral
         self.target_speeds = np.array(target_speeds) if target_speeds is not None else DecisionMakingVehicle.DEFAULT_TARGET_SPEEDS
+        self.front_vehicle = front_vehicle
+        self.ttc = ttc
+        self.acc_flag = acc_flag
         self.actions = self.ACTIONS_ALL if control and lateral \
             else self.ACTIONS_CTRL if control \
             else self.ACTIONS_LAT if lateral \
@@ -310,7 +317,7 @@ class DecisionMakingAction(ActionType):
 
     @property
     def vehicle_class(self) -> Callable:
-        return functools.partial(DecisionMakingVehicle, target_speeds=self.target_speeds)
+        return functools.partial(DecisionMakingVehicle, target_speeds=self.target_speeds, front_vehicle=self.front_vehicle, ttc=self.ttc, acc_flag=self.acc_flag)
 
     def act(self, action: int) -> None:
         self.controlled_vehicle.act(self.actions[action])
