@@ -322,7 +322,9 @@ class MDPVehicle(ControlledVehicle):
 
 ##### TO-DO 
 class DecisionMakingVehicle(MDPVehicle):
-    """A controlled vehicle which performs high-level decision making actions."""
+    """
+    A MDP vehicle which extends the action space to performs high-level decision making actions.
+    """
 
     def __init__(self,
                  road: Road,
@@ -336,9 +338,10 @@ class DecisionMakingVehicle(MDPVehicle):
                  front_vehicle: Optional[Vehicle] = None,
                  ttc: Optional[float] = None,
                  acc_flag: Optional[Boolean] = False,
-                 distance: Optional[float] = None) -> None:
+                 distance: Optional[float] = None,
+                 safe_distance: Optional[float] = None) -> None:
         """
-        Initializes an DecisionMakingVehicle
+        Initializes a DecisionMakingVehicle
 
         """
         super().__init__(road, position, heading, speed, target_lane_index, target_speed, target_speeds, route)
@@ -346,6 +349,7 @@ class DecisionMakingVehicle(MDPVehicle):
         self.ttc = ttc
         self.acc_flag = acc_flag
         self.distance = distance
+        self.safe_distance = safe_distance
 
     def act(self, action: Union[dict, str] = None) -> None:
         """
@@ -409,6 +413,7 @@ class DecisionMakingVehicle(MDPVehicle):
             return
         super().act()
 
+    # Utilities / Computations
     def get_front_vehicle(self) -> Vehicle:
         front_vehicle , _ = self.road.neighbour_vehicles(self, self.lane_index)
         return front_vehicle
@@ -423,26 +428,30 @@ class DecisionMakingVehicle(MDPVehicle):
         return (self.speed * 3.6 / 10)**2
 
     def acc_on(self) -> None:
+        """
+        ACC Turn on module
+        """
         self.front_vehicle = self.get_front_vehicle()
 
         if(self.front_vehicle):
             self.distance, self.ttc = self.get_ttc_distance(self.front_vehicle)
-            if((self.ttc > 12.5 or self.ttc < 0) and (self.distance > self.get_safe_distance())):
+            self.safe_distance = self.get_safe_distance() 
+            if((self.ttc > 12.5 or self.ttc < 0) and (self.distance > self.safe_distance)):
                 super().act("FASTER")
                 print(f"going faster, ttc: {self.ttc}")
-            elif (self.ttc < 12.5 and self.ttc > 11.5 and self.distance > self.get_safe_distance()):
+            elif (self.ttc < 12.5 and self.ttc > 11.5 and self.distance > self.safe_distance):
                 super().act("IDLE")
-                print(f"idle, ttc: {self.ttc}")
+                print(f"idle, ttc: {self.ttc}, safe distance: {self.safe_distance}")
             else:
                 super().act("SLOWER")
                 print(f"going slower, ttc: {self.ttc}")
-
         else:
             super().act()
 
     def step(self, dt: float) -> None:
         if(self.acc_flag):
             self.acc_on()
+
         super().step(dt)
 
     def predict_trajectory(self, actions: List, action_duration: float, trajectory_timestep: float, dt: float) \
