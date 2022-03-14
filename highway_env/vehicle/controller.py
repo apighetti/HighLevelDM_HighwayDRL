@@ -346,7 +346,8 @@ class DecisionMakingVehicle(MDPVehicle):
                  front_vehicle: Optional[Vehicle] = None,
                  ttc: Optional[float] = None,
                  acc_flag: Optional[Boolean] = False,
-                 distance: Optional[float] = None) -> None:
+                 distance: Optional[float] = None,
+                 safe_distance: Optional[float] = None) -> None:
         """
         Initializes a DecisionMakingVehicle
 
@@ -356,6 +357,7 @@ class DecisionMakingVehicle(MDPVehicle):
         self.ttc = ttc
         self.acc_flag = acc_flag
         self.distance = distance
+        self.safe_distance = safe_distance
 
     def act(self, action: Union[dict, str] = None) -> None:
         
@@ -420,6 +422,7 @@ class DecisionMakingVehicle(MDPVehicle):
             return
         super().act()
 
+    # Utilities / Computations
     def get_front_vehicle(self) -> Vehicle:
         front_vehicle , _ = self.road.neighbour_vehicles(self, self.lane_index)
         return front_vehicle
@@ -444,6 +447,9 @@ class DecisionMakingVehicle(MDPVehicle):
 
 
     def acc_on(self) -> None:
+        """
+        ACC Turn on module
+        """
         self.front_vehicle = self.get_front_vehicle()
 
         ''' acceleration formula a_id - a_ttc'''
@@ -459,7 +465,7 @@ class DecisionMakingVehicle(MDPVehicle):
                 
             elif (self.ttc < 12.5 and self.ttc > 11.5 and self.distance > self.get_safe_distance()):
                 super().act("IDLE")
-                print(f"idle, ttc: {self.ttc}")
+                print(f"idle, ttc: {self.ttc}, safe distance: {self.safe_distance}")
             else:
                 #super().act("SLOWER")
                 self.acceleration = self.compute_acceleration(self.front_vehicle.speed)
@@ -474,6 +480,7 @@ class DecisionMakingVehicle(MDPVehicle):
                 a = dv / dt'''
             
             self.acc_on()
+
         super().step(dt)
 
     def predict_trajectory(self, actions: List, action_duration: float, trajectory_timestep: float, dt: float) \
