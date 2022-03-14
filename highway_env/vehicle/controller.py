@@ -41,11 +41,13 @@ class ControlledVehicle(Vehicle):
                  speed: float = 0,
                  target_lane_index: LaneIndex = None,
                  target_speed: float = None,
+                 acceleration: float = None,
                  route: Route = None):
         super().__init__(road, position, heading, speed)
         self.target_lane_index = target_lane_index or self.lane_index
         self.target_speed = target_speed or self.speed
         self.route = route
+        self.acceleration = acceleration
 
     @classmethod
     def create_from(cls, vehicle: "ControlledVehicle") -> "ControlledVehicle":
@@ -102,9 +104,14 @@ class ControlledVehicle(Vehicle):
             target_lane_index = _from, _to, np.clip(_id - 1, 0, len(self.road.network.graph[_from][_to]) - 1)
             if self.road.network.get_lane(target_lane_index).is_reachable_from(self.position):
                 self.target_lane_index = target_lane_index
-
-        action = {"steering": self.steering_control(self.target_lane_index),
+                
+        if self.acceleration:
+            action = {"steering": self.steering_control(self.target_lane_index),
+                  "acceleration": self.acceleration}
+        else:
+            action = {"steering": self.steering_control(self.target_lane_index),
                   "acceleration": self.speed_control(self.target_speed)}
+            
         action['steering'] = np.clip(action['steering'], -self.MAX_STEERING_ANGLE, self.MAX_STEERING_ANGLE)
         super().act(action)
 
@@ -322,6 +329,9 @@ class MDPVehicle(ControlledVehicle):
 
 ##### TO-DO 
 class DecisionMakingVehicle(MDPVehicle):
+    
+    ACCELERATION_VALUES = np.linspace(-20,20,50)    #acceleration values in m/s^2
+    
     """A controlled vehicle which performs high-level decision making actions."""
 
     def __init__(self,
@@ -338,7 +348,7 @@ class DecisionMakingVehicle(MDPVehicle):
                  acc_flag: Optional[Boolean] = False,
                  distance: Optional[float] = None) -> None:
         """
-        Initializes an DecisionMakingVehicle
+        Initializes a DecisionMakingVehicle
 
         """
         super().__init__(road, position, heading, speed, target_lane_index, target_speed, target_speeds, route)
@@ -348,6 +358,7 @@ class DecisionMakingVehicle(MDPVehicle):
         self.distance = distance
 
     def act(self, action: Union[dict, str] = None) -> None:
+        
         """
         Perform a high-level action.
 
@@ -356,8 +367,8 @@ class DecisionMakingVehicle(MDPVehicle):
 
         :param action: a high-level action
         """
+        
         if action == "ACC":
-
             if(not self.acc_flag):
                 self.acc_flag = True
                 print("ACC ON")
@@ -422,26 +433,46 @@ class DecisionMakingVehicle(MDPVehicle):
     def get_safe_distance(self) -> float:
         return (self.speed * 3.6 / 10)**2
 
+    def compute_acceleration(self, ttc: float, target_speed: float) -> float:
+        
+        '''compute acceleration using the formula K/a(c + ttc)'''
+        
+        K = 0.6
+        alpha = 0.2
+        
+        return super().speed_control(target_speed) - K/alpha*(1+ttc)
+
+
     def acc_on(self) -> None:
         self.front_vehicle = self.get_front_vehicle()
+
+        ''' acceleration formula a_id - a_ttc'''
 
         if(self.front_vehicle):
             self.distance, self.ttc = self.get_ttc_distance(self.front_vehicle)
             if((self.ttc > 12.5 or self.ttc < 0) and (self.distance > self.get_safe_distance())):
-                super().act("FASTER")
-                print(f"going faster, ttc: {self.ttc}")
+                
+                #super().act("FASTER")
+                self.acceleration = self.compute_acceleration(self.front_vehicle.speed)
+                
+                print(f"going slower, acceleration: {self.acceleration}")
+                
             elif (self.ttc < 12.5 and self.ttc > 11.5 and self.distance > self.get_safe_distance()):
                 super().act("IDLE")
                 print(f"idle, ttc: {self.ttc}")
             else:
-                super().act("SLOWER")
-                print(f"going slower, ttc: {self.ttc}")
-
+                #super().act("SLOWER")
+                self.acceleration = self.compute_acceleration(self.front_vehicle.speed)
+                print(f"going slower, acceleration: {self.acceleration}")
         else:
             super().act()
 
     def step(self, dt: float) -> None:
         if(self.acc_flag):
+            
+            '''dt = 0.02 s
+                a = dv / dt'''
+            
             self.acc_on()
         super().step(dt)
 
