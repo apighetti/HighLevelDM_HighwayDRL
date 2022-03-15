@@ -41,13 +41,13 @@ class ControlledVehicle(Vehicle):
                  speed: float = 0,
                  target_lane_index: LaneIndex = None,
                  target_speed: float = None,
-                 acceleration: float = None,
+                 accel: float = None,
                  route: Route = None):
         super().__init__(road, position, heading, speed)
         self.target_lane_index = target_lane_index or self.lane_index
         self.target_speed = target_speed or self.speed
         self.route = route
-        self.acceleration = acceleration
+        self.accel = accel
 
     @classmethod
     def create_from(cls, vehicle: "ControlledVehicle") -> "ControlledVehicle":
@@ -105,9 +105,9 @@ class ControlledVehicle(Vehicle):
             if self.road.network.get_lane(target_lane_index).is_reachable_from(self.position):
                 self.target_lane_index = target_lane_index
                 
-        if self.acceleration:
+        if self.accel:
             action = {"steering": self.steering_control(self.target_lane_index),
-                  "acceleration": self.acceleration}
+                  "acceleration": self.accel}
         else:
             action = {"steering": self.steering_control(self.target_lane_index),
                   "acceleration": self.speed_control(self.target_speed)}
@@ -440,10 +440,10 @@ class DecisionMakingVehicle(MDPVehicle):
         
         '''compute acceleration using the formula K/a(c + ttc)'''
         
-        K = 0.6
-        alpha = 0.2
+        omega = 7
+        alpha = 5
         
-        return super().speed_control(target_speed) - K/alpha*(1+ttc)
+        return (super().speed_control(target_speed)) - (omega/alpha*(1+ttc))
 
 
     def acc_on(self) -> None:
@@ -456,20 +456,21 @@ class DecisionMakingVehicle(MDPVehicle):
 
         if(self.front_vehicle):
             self.distance, self.ttc = self.get_ttc_distance(self.front_vehicle)
-            if((self.ttc > 12.5 or self.ttc < 0) and (self.distance > self.get_safe_distance())):
+            self.safe_distance = self.get_safe_distance()
+            if((self.ttc > 12.5 or self.ttc < 0) and (self.distance > self.safe_distance)):
                 
                 #super().act("FASTER")
-                self.acceleration = self.compute_acceleration(self.front_vehicle.speed)
+                self.accel = self.compute_acceleration(self.ttc, self.front_vehicle.speed)
                 
-                print(f"going slower, acceleration: {self.acceleration}")
+                print(f"going faster, acceleration: {self.accel}")
                 
-            elif (self.ttc < 12.5 and self.ttc > 11.5 and self.distance > self.get_safe_distance()):
+            elif (self.ttc < 12.5 and self.ttc > 11.5 and self.distance > self.safe_distance):
                 super().act("IDLE")
                 print(f"idle, ttc: {self.ttc}, safe distance: {self.safe_distance}")
             else:
                 #super().act("SLOWER")
-                self.acceleration = self.compute_acceleration(self.front_vehicle.speed)
-                print(f"going slower, acceleration: {self.acceleration}")
+                self.accel = self.compute_acceleration(self.ttc, self.front_vehicle.speed)
+                print(f"going slower, acceleration: {self.accel}")
         else:
             super().act()
 
