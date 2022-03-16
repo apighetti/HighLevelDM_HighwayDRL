@@ -106,6 +106,7 @@ class ControlledVehicle(Vehicle):
                 self.target_lane_index = target_lane_index
                 
         if self.accel:
+            # print(f"acceleration in ControlledVehicle: {self.accel}")
             action = {"steering": self.steering_control(self.target_lane_index),
                   "acceleration": self.accel}
         else:
@@ -329,9 +330,7 @@ class MDPVehicle(ControlledVehicle):
 
 ##### TO-DO 
 class DecisionMakingVehicle(MDPVehicle):
-    
-    ACCELERATION_VALUES = np.linspace(-20,20,50)    #acceleration values in m/s^2
-    
+        
     """A controlled vehicle which performs high-level decision making actions."""
 
     def __init__(self,
@@ -431,6 +430,8 @@ class DecisionMakingVehicle(MDPVehicle):
         distance = self.lane_distance_to(front_vehicle, self.lane)
         other_projected_speed = front_vehicle.speed * np.dot(front_vehicle.direction, self.direction)
         time_to_collision = distance / utils.not_zero(self.speed - other_projected_speed)
+        if(time_to_collision < 0):
+            time_to_collision = 0
         return distance, time_to_collision
 
     def get_safe_distance(self) -> float:
@@ -440,10 +441,10 @@ class DecisionMakingVehicle(MDPVehicle):
         
         '''compute acceleration using the formula K/a(c + ttc)'''
         
-        omega = 1
-        alpha = 10
-        
-        return (super().speed_control(target_speed)) - (omega/alpha*(1+ttc))
+        omega = 0.05
+        accl = (super().speed_control(target_speed)) - omega*ttc - 1 * max(self.safe_distance - self.distance, 0)
+        print(f"ttc: {round(ttc,2)},\naccl: {accl},\nsafe distance: {round(self.safe_distance,2)},\ndistance: {round(self.distance,2)},\nspeed: {round(self.speed,2)},\nfront vehicle speed: {round(target_speed,2)}")
+        return accl
 
 
     def acc_on(self) -> None:
@@ -457,19 +458,26 @@ class DecisionMakingVehicle(MDPVehicle):
         if(self.front_vehicle):
             self.distance, self.ttc = self.get_ttc_distance(self.front_vehicle)
             self.safe_distance = self.get_safe_distance()
-            if((self.ttc > 12.5 or self.ttc < 0) and (self.distance > self.safe_distance)):
-                #super().act("FASTER")
-                self.accel = self.compute_acceleration(self.ttc, self.front_vehicle.speed)
-                print(f"going faster, acceleration: {self.accel}, ttc: {self.ttc}, safe distance: {self.safe_distance}, distance: {self.distance}")
-                
-            elif (self.ttc < 12.5 and self.ttc > 11.5 and self.distance > self.safe_distance):
-                super().act("IDLE")
-                print(f"__IDLE__ , acceleration: {self.accel}, ttc: {self.ttc}, safe distance: {self.safe_distance}, distance: {self.distance}")
+            temp_acl = self.compute_acceleration(self.ttc, self.front_vehicle.speed)
 
-            elif (self.ttc > 0):
-                #super().act("SLOWER")
-                self.accel = self.compute_acceleration(self.ttc, self.front_vehicle.speed)
-                print(f"going slower, acceleration: {self.accel}, ttc: {self.ttc}, safe distance: {self.safe_distance}, distance: {self.distance}")
+            if((self.distance > self.safe_distance and temp_acl > 0) or (self.distance < self.safe_distance and temp_acl < 0)):
+                self.accel = temp_acl
+            else:
+                super().act("IDLE")
+                print(f"__IDLE__")
+
+
+            # if((self.ttc > 1000 or self.ttc < 0) and (self.distance > self.safe_distance)):
+            #     #super().act("FASTER")
+            #     self.accel = self.compute_acceleration(self.ttc, self.front_vehicle.speed)
+            #     # print(f"going faster, acceleration: {self.accel}, ttc: {self.ttc}, safe distance: {self.safe_distance}, distance: {self.distance}")
+            # elif (self.ttc > 0):
+            #     #super().act("SLOWER")
+            #     self.accel = self.compute_acceleration(self.ttc, self.front_vehicle.speed)
+            #     # print(f"going slower, acceleration: {self.accel}, ttc: {self.ttc}, safe distance: {self.safe_distance}, distance: {self.distance}")
+            # else:
+            #     super().act("IDLE")
+            #     # print(f"__IDLE__ , acceleration: {self.accel}, ttc: {self.ttc}, safe distance: {self.safe_distance}, distance: {self.distance}")
         else:
             super().act()
 
