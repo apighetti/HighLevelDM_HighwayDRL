@@ -440,8 +440,8 @@ class DecisionMakingVehicle(MDPVehicle):
         
         '''compute acceleration using the formula K/a(c + ttc)'''
         
-        omega = 7
-        alpha = 5
+        omega = 1
+        alpha = 10
         
         return (super().speed_control(target_speed)) - (omega/alpha*(1+ttc))
 
@@ -458,19 +458,18 @@ class DecisionMakingVehicle(MDPVehicle):
             self.distance, self.ttc = self.get_ttc_distance(self.front_vehicle)
             self.safe_distance = self.get_safe_distance()
             if((self.ttc > 12.5 or self.ttc < 0) and (self.distance > self.safe_distance)):
-                
                 #super().act("FASTER")
                 self.accel = self.compute_acceleration(self.ttc, self.front_vehicle.speed)
-                
-                print(f"going faster, acceleration: {self.accel}")
+                print(f"going faster, acceleration: {self.accel}, ttc: {self.ttc}, safe distance: {self.safe_distance}, distance: {self.distance}")
                 
             elif (self.ttc < 12.5 and self.ttc > 11.5 and self.distance > self.safe_distance):
                 super().act("IDLE")
-                print(f"idle, ttc: {self.ttc}, safe distance: {self.safe_distance}")
-            else:
+                print(f"__IDLE__ , acceleration: {self.accel}, ttc: {self.ttc}, safe distance: {self.safe_distance}, distance: {self.distance}")
+
+            elif (self.ttc > 0):
                 #super().act("SLOWER")
                 self.accel = self.compute_acceleration(self.ttc, self.front_vehicle.speed)
-                print(f"going slower, acceleration: {self.accel}")
+                print(f"going slower, acceleration: {self.accel}, ttc: {self.ttc}, safe distance: {self.safe_distance}, distance: {self.distance}")
         else:
             super().act()
 
