@@ -439,7 +439,7 @@ class DecisionMakingVehicle(MDPVehicle):
 
     def compute_acceleration(self, ttc: float, target_speed: float) -> float:
         
-        '''compute acceleration using the formula K/a(c + ttc)'''
+        '''compute desired acceleration'''
         
         omega = 0.05
         accl = (super().speed_control(target_speed)) - omega*ttc - 1 * max(self.safe_distance - self.distance, 0)
@@ -464,8 +464,6 @@ class DecisionMakingVehicle(MDPVehicle):
                 self.accel = temp_acl
             else:
                 super().act("IDLE")
-                print(f"__IDLE__")
-
 
             # if((self.ttc > 1000 or self.ttc < 0) and (self.distance > self.safe_distance)):
             #     #super().act("FASTER")
