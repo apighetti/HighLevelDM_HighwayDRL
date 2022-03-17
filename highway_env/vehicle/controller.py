@@ -328,10 +328,10 @@ class MDPVehicle(ControlledVehicle):
         return states
 
 
-##### TO-DO 
+##### Thesis add-on #####
 class DecisionMakingVehicle(MDPVehicle):
         
-    """A controlled vehicle which performs high-level decision making actions."""
+    """An MDP vehicle which performs high-level decision making actions."""
 
     def __init__(self,
                  road: Road,
@@ -361,10 +361,10 @@ class DecisionMakingVehicle(MDPVehicle):
     def act(self, action: Union[dict, str] = None) -> None:
         
         """
-        Perform a high-level action.
+        Perform a high-level decision making action.
 
-        - If the action is a decision making-level action, choose speed from the allowed discrete range.
-        - Else, forward action to the ControlledVehicle handler.
+        - If the action is a decision making-level action, choose action from high-level decision space.
+        - Else, forward action to the MDPVehicle handler.
 
         :param action: a high-level action
         """
@@ -413,7 +413,7 @@ class DecisionMakingVehicle(MDPVehicle):
                     # if(reenter_gap >= 25):
                     #     super().act("LANE_RIGHT")
 
-        elif action == "RIGHT-MOST_LANE":
+        elif action == "RIGHTMOST_LANE":
             # DO SOMETHING
             print("RIGHT-MOST LANE")
         else:
@@ -430,17 +430,17 @@ class DecisionMakingVehicle(MDPVehicle):
         distance = self.lane_distance_to(front_vehicle, self.lane)
         other_projected_speed = front_vehicle.speed * np.dot(front_vehicle.direction, self.direction)
         time_to_collision = distance / utils.not_zero(self.speed - other_projected_speed)
-        if(time_to_collision < 0):
+        if(time_to_collision < 0): #### DA MODIFICARE
             time_to_collision = 0
         return distance, time_to_collision
 
     def get_safe_distance(self) -> float:
-        return (self.speed * 3.6 / 10)**2
+        return (self.speed * 3.6 / 10)**2 #### DA MODIFICARE
 
     def compute_acceleration(self, ttc: float, target_speed: float) -> float:
-        
-        '''compute desired acceleration'''
-        
+        """
+        Compute optimal acceleration
+        """       
         omega = 0.05
         accl = (super().speed_control(target_speed)) - omega*ttc - 1 * max(self.safe_distance - self.distance, 0)
         print(f"ttc: {round(ttc,2)},\naccl: {accl},\nsafe distance: {round(self.safe_distance,2)},\ndistance: {round(self.distance,2)},\nspeed: {round(self.speed,2)},\nfront vehicle speed: {round(target_speed,2)}")
@@ -449,12 +449,10 @@ class DecisionMakingVehicle(MDPVehicle):
 
     def acc_on(self) -> None:
         """
-        ACC Turn on module
+        Adaptive Cruise Control module
         """
         self.front_vehicle = self.get_front_vehicle()
-
-        ''' acceleration formula a_id - a_ttc'''
-
+        
         if(self.front_vehicle):
             self.distance, self.ttc = self.get_ttc_distance(self.front_vehicle)
             self.safe_distance = self.get_safe_distance()
@@ -464,27 +462,12 @@ class DecisionMakingVehicle(MDPVehicle):
                 self.accel = temp_acl
             else:
                 super().act("IDLE")
-
-            # if((self.ttc > 1000 or self.ttc < 0) and (self.distance > self.safe_distance)):
-            #     #super().act("FASTER")
-            #     self.accel = self.compute_acceleration(self.ttc, self.front_vehicle.speed)
-            #     # print(f"going faster, acceleration: {self.accel}, ttc: {self.ttc}, safe distance: {self.safe_distance}, distance: {self.distance}")
-            # elif (self.ttc > 0):
-            #     #super().act("SLOWER")
-            #     self.accel = self.compute_acceleration(self.ttc, self.front_vehicle.speed)
-            #     # print(f"going slower, acceleration: {self.accel}, ttc: {self.ttc}, safe distance: {self.safe_distance}, distance: {self.distance}")
-            # else:
-            #     super().act("IDLE")
-            #     # print(f"__IDLE__ , acceleration: {self.accel}, ttc: {self.ttc}, safe distance: {self.safe_distance}, distance: {self.distance}")
         else:
             super().act()
 
+    # Override simulation step method to implement continuous DM actions
     def step(self, dt: float) -> None:
-        if(self.acc_flag):
-            
-            '''dt = 0.02 s
-                a = dv / dt'''
-            
+        if(self.acc_flag):            
             self.acc_on()
 
         super().step(dt)

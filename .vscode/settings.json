@@ -2,6 +2,6 @@
     "restructuredtext.linter.disabled": true,
     "restructuredtext.confPath": "${workspaceFolder}\\docs\\source",
     "esbonio.server.enabled": false,
-    "esbonio.sphinx.confDir": "c:\\Users\\aless\\OneDrive\\Desktop\\Thesis_repo_new\\HighwayDRL\\docs\\source",
+    "esbonio.sphinx.confDir": "${workspaceFolder}\\docs\\source",
     "restructuredtext.languageServer.disabled": true
 }

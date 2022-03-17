@@ -276,7 +276,7 @@ class DecisionMakingAction(ActionType):
 
     ACTIONS_LAT = {
         0: 'OVERTAKE',
-        1: 'RIGHT-MOST_LANE'
+        1: 'RIGHTMOST_LANE'
     }
     """A mapping of lateral action indexes to labels."""
 
