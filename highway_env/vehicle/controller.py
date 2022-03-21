@@ -41,13 +41,13 @@ class ControlledVehicle(Vehicle):
                  speed: float = 0,
                  target_lane_index: LaneIndex = None,
                  target_speed: float = None,
-                 accel: float = None,
+                 phy_action: float = None,
                  route: Route = None):
         super().__init__(road, position, heading, speed)
         self.target_lane_index = target_lane_index or self.lane_index
         self.target_speed = target_speed or self.speed
         self.route = route
-        self.accel = accel
+        self.phy_action = phy_action
 
     @classmethod
     def create_from(cls, vehicle: "ControlledVehicle") -> "ControlledVehicle":
@@ -105,10 +105,8 @@ class ControlledVehicle(Vehicle):
             if self.road.network.get_lane(target_lane_index).is_reachable_from(self.position):
                 self.target_lane_index = target_lane_index
                 
-        if self.accel:
-            # print(f"acceleration in ControlledVehicle: {self.accel}")
-            action = {"steering": self.steering_control(self.target_lane_index),
-                  "acceleration": self.accel}
+        if self.phy_action:
+            action = self.phy_action
         else:
             action = {"steering": self.steering_control(self.target_lane_index),
                   "acceleration": self.speed_control(self.target_speed)}
@@ -436,39 +434,47 @@ class DecisionMakingVehicle(MDPVehicle):
 
     def get_safe_distance(self) -> float:
         return (self.speed * 3.6 / 10)**2 #### DA MODIFICARE
-
-    def compute_acceleration(self, ttc: float, target_speed: float) -> float:
+    
+    def compute_acceleration(self, ttc: float, target_speed: float, safe_distance: float, distance: float) -> float:
         """
         Compute optimal acceleration
         """       
         omega = 0.05
-        accl = (super().speed_control(target_speed)) - omega*ttc - 1 * max(self.safe_distance - self.distance, 0)
-        print(f"ttc: {round(ttc,2)},\naccl: {accl},\nsafe distance: {round(self.safe_distance,2)},\ndistance: {round(self.distance,2)},\nspeed: {round(self.speed,2)},\nfront vehicle speed: {round(target_speed,2)}")
+        accl = (super().speed_control(target_speed)) - omega*ttc - 1 * max(safe_distance - distance, 0)
+        # print(f"ttc: {round(ttc,2)},\naccl: {accl},\nsafe distance: {round(safe_distance,2)},\ndistance: {round(distance,2)},\nspeed: {round(self.speed,2)},\nfront vehicle speed: {round(target_speed,2)}")
         return accl
 
+    def physical_controller(self, temp_action: Union[dict, str] = None) -> Union[dict, str]:
+        temp_action['acceleration'] = np.clip(temp_action['acceleration'], -8, 8)
+        return temp_action
 
-    def acc_on(self) -> None:
-        """
-        Adaptive Cruise Control module
-        """
-        self.front_vehicle = self.get_front_vehicle()
-        
-        if(self.front_vehicle):
-            self.distance, self.ttc = self.get_ttc_distance(self.front_vehicle)
-            self.safe_distance = self.get_safe_distance()
-            temp_acl = self.compute_acceleration(self.ttc, self.front_vehicle.speed)
+    def tactical_dm(self, action: Union[dict, str] = None) -> float:
+        if(action == "ACC"):
 
-            if((self.distance > self.safe_distance and temp_acl > 0) or (self.distance < self.safe_distance and temp_acl < 0)):
-                self.accel = temp_acl
-            else:
-                super().act("IDLE")
-        else:
-            super().act()
+            self.front_vehicle = self.get_front_vehicle()
+            if(self.front_vehicle):
+                self.target_speed = self.front_vehicle.speed
+                self.distance, self.ttc = self.get_ttc_distance(self.front_vehicle)
+                self.safe_distance = self.get_safe_distance()
+                i_accl =  self.compute_acceleration(self.ttc, self.target_speed, self.safe_distance, self.distance)
+                temp_res = {"steering": self.steering_control(self.target_lane_index),
+                        "acceleration": i_accl}
+                self.phy_action = self.physical_controller(temp_res)
+
+        elif(action == "OVERTAKE"):
+            return
+        elif(action == "RIGHTMOST_LANE"):
+            return
 
     # Override simulation step method to implement continuous DM actions
     def step(self, dt: float) -> None:
-        if(self.acc_flag):            
-            self.acc_on()
+        
+        if(self.acc_flag):
+            self.tactical_dm("ACC")
+        # elif(self.ovtk_flag):
+        #     self.tactical_dm("OVERTAKE")
+        # elif(self.rml_flag):
+        #     self.tactical_dm("RIGHTMOST_LANE")        
 
         super().step(dt)
 
