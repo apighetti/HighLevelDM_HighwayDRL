@@ -332,6 +332,7 @@ class DecisionMakingVehicle(MDPVehicle):
     """An MDP vehicle which performs high-level decision making actions."""
 
     def __init__(self,
+                 physical_parameters: 'dict[str,float]',
                  road: Road,
                  position: List[float],
                  heading: float = 0,
@@ -344,7 +345,9 @@ class DecisionMakingVehicle(MDPVehicle):
                  ttc: Optional[float] = None,
                  acc_flag: Optional[Boolean] = False,
                  distance: Optional[float] = None,
-                 safe_distance: Optional[float] = None) -> None:
+                 safe_distance: Optional[float] = None
+                 ) -> None:
+                 
         """
         Initializes a DecisionMakingVehicle
 
@@ -355,6 +358,7 @@ class DecisionMakingVehicle(MDPVehicle):
         self.acc_flag = acc_flag
         self.distance = distance
         self.safe_distance = safe_distance
+        self.physical_parameters = physical_parameters
 
     def act(self, action: Union[dict, str] = None) -> None:
         
@@ -420,6 +424,7 @@ class DecisionMakingVehicle(MDPVehicle):
         super().act()
 
     # Utilities / Computations
+    
     def get_front_vehicle(self) -> Vehicle:
         front_vehicle , _ = self.road.neighbour_vehicles(self, self.lane_index)
         return front_vehicle
@@ -436,36 +441,67 @@ class DecisionMakingVehicle(MDPVehicle):
         return (self.speed * 3.6 / 10)**2 #### DA MODIFICARE
     
     def compute_acceleration(self, ttc: float, target_speed: float, safe_distance: float, distance: float) -> float:
-        """
-        Compute optimal acceleration
-        """       
+        
+        """ Compute optimal acceleration """
+               
         omega = 0.05
-        accl = (super().speed_control(target_speed)) - omega*ttc - 1 * max(safe_distance - distance, 0)
+        accl = (super().speed_control(target_speed)) #acceleration component
+        brake = - omega*ttc - 1 * max(safe_distance - distance, 0) #brake component
         # print(f"ttc: {round(ttc,2)},\naccl: {accl},\nsafe distance: {round(safe_distance,2)},\ndistance: {round(distance,2)},\nspeed: {round(self.speed,2)},\nfront vehicle speed: {round(target_speed,2)}")
-        return accl
+        return accl, brake
 
-    def physical_controller(self, temp_action: Union[dict, str] = None) -> Union[dict, str]:
-        temp_action['acceleration'] = np.clip(temp_action['acceleration'], -8, 8)
-        return temp_action
+    def update_physical_parameters(self, physical_parameters, accl, brake, steering):
+        
+        ''' Update the object containing the relativa information about acceleration, brake and steering '''
+        
+        physical_parameters['acceleration'] = accl
+        physical_parameters['brake'] = brake
+        physical_parameters['steering'] = steering
+        
+        return physical_parameters
 
-    def tactical_dm(self, action: Union[dict, str] = None) -> float:
+    def normalize_parameters(self, accl, brake, steering):
+        
+        ''' Normalize acceleration, brake and steering values into reasonable ones'''
+        
+        return accl/100, brake/100, steering/360
+        
+    def tactical_dm(self, action: Union[dict, str] = None):
+        
+        ''' Tactical module that handles heuristic for each possible action'''
+        
         if(action == "ACC"):
 
             self.front_vehicle = self.get_front_vehicle()
+            
             if(self.front_vehicle):
                 self.target_speed = self.front_vehicle.speed
                 self.distance, self.ttc = self.get_ttc_distance(self.front_vehicle)
                 self.safe_distance = self.get_safe_distance()
-                i_accl =  self.compute_acceleration(self.ttc, self.target_speed, self.safe_distance, self.distance)
-                temp_res = {"steering": self.steering_control(self.target_lane_index),
-                        "acceleration": i_accl}
-                self.phy_action = self.physical_controller(temp_res)
-
+                accl, brake =  self.compute_acceleration(self.ttc, self.target_speed, self.safe_distance, self.distance)
+                steering = self.steering_control(self.target_lane_index)
+                
+                i_accl, i_brake, i_steering = self.normalize_parameters(accl, brake, steering)
+                
+                params = self.update_physical_parameters(self.physical_parameters, i_accl, i_brake, i_steering)
+                
+                '''temp_res = {"steering": self.steering_control(self.target_lane_index),
+                        "acceleration": i_accl}'''
+                        
+                #self.phy_action = self.physical_controller(params)
+                
+                return params
+                
         elif(action == "OVERTAKE"):
             return
         elif(action == "RIGHTMOST_LANE"):
             return
 
+    def physical_controller(self, physical_parameters):
+        return 0
+        #TO DO#
+        
+        
     # Override simulation step method to implement continuous DM actions
     def step(self, dt: float) -> None:
         
