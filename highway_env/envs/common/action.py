@@ -286,7 +286,9 @@ class DecisionMakingAction(ActionType):
                  lateral: bool = True,
                  target_speeds: Optional[Vector] = None,
                  front_vehicle: Optional[Vehicle] = None,
-                 ttc: Optional[float] = None,
+                 velocity_integral : Optional[float] = None,
+                 prev_velocity : Optional[float] = None,
+                 #  ttc: Optional[float] = None,
                  acc_flag: Optional[Boolean] = False,
                  **kwargs) -> None:
         """
@@ -301,8 +303,10 @@ class DecisionMakingAction(ActionType):
         self.control = control
         self.lateral = lateral
         self.target_speeds = np.array(target_speeds) if target_speeds is not None else MDPVehicle.DEFAULT_TARGET_SPEEDS
+        self.velocity_integral = velocity_integral if velocity_integral is not None else 0.0
+        self.prev_velocity = prev_velocity if prev_velocity is not None else 0.0
         self.front_vehicle = front_vehicle
-        self.ttc = ttc
+        # self.ttc = ttc
         self.acc_flag = acc_flag
         self.actions = self.ACTIONS_ALL if control and lateral \
             else self.ACTIONS_CTRL if control \
@@ -317,7 +321,7 @@ class DecisionMakingAction(ActionType):
 
     @property
     def vehicle_class(self) -> Callable:
-        return functools.partial(DecisionMakingVehicle, target_speeds=self.target_speeds, front_vehicle=self.front_vehicle, ttc=self.ttc, acc_flag=self.acc_flag)
+        return functools.partial(DecisionMakingVehicle, target_speeds=self.target_speeds, front_vehicle=self.front_vehicle, acc_flag=self.acc_flag)
 
     def act(self, action: int) -> None:
         self.controlled_vehicle.act(self.actions[action])
