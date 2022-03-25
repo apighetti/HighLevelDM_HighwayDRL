@@ -353,8 +353,8 @@ class DecisionMakingVehicle(MDPVehicle):
                  target_speeds: Optional[Vector] = None,
                  route: Optional[Route] = None,
                  front_vehicle: Optional[Vehicle] = None,
-                 velocity_integral : Optional[float] = None,
-                 prev_velocity : Optional[float] = None,
+                 velocity_integral : Optional[float] = 0.0,
+                 prev_velocity : Optional[float] = 0.0,
                  acc_flag: Optional[Boolean] = False #,
                 #  distance: Optional[float] = None,
                 #  ttc: Optional[float] = None,
@@ -453,7 +453,8 @@ class DecisionMakingVehicle(MDPVehicle):
 
     def get_safe_distance(self) -> float:
         # (self.speed * 3.6 / 10)**2 #### DA MODIFICARE
-        return  self.speed*0.05 + self.MAX_ACCEL * 0.00125 -pow(self.front_vehicle.speed, 2) / (2*self.MAX_BRAKE) + pow((self.speed+ 0.05 * self.MAX_ACCEL), 2)/ (2*self.MIN_BRAKE)
+        return (self.speed * 3.6 / 10)**2
+        # self.speed*0.05 + self.MAX_ACCEL * 0.00125 -pow(self.front_vehicle.speed, 2) / (2*self.MAX_BRAKE) + pow((self.speed+ 0.05 * self.MAX_ACCEL), 2)/ (2*self.MIN_BRAKE)
     
     # def compute_acceleration(self, ttc: float, target_speed: float, safe_distance: float, distance: float) -> float:
         
@@ -483,7 +484,7 @@ class DecisionMakingVehicle(MDPVehicle):
 
 
     def physical_controller(self, delta_time: float, current_speed: float, target_speed: float, steering_angle: float) -> Tuple[float,float]:
-        e = (target_speed, - current_speed) / target_speed
+        e = (target_speed - current_speed) / target_speed
         dt = delta_time
         
         ie = np.clip((dt * e + self.velocity_integral), -self.VELOCITY_INTEGRAL_MAX, self.VELOCITY_INTEGRAL_MAX)
@@ -529,33 +530,31 @@ class DecisionMakingVehicle(MDPVehicle):
                 if(distance_error < 0):
                     # Current distance is less than safety distance
                     phy_acceleration = -1.0
+                    # TO-DO definire accel
 
 
                 elif(self.distance >= self.safe_distance or (rel_time > 5 and front_vehicle_speed > 10)):
                     # Front vehicle is too far
                     phy_acceleration = 1.0
+                    # TO-DO definire accel
     
-                else:
-                    if(self.speed < 0.01 and front_vehicle_speed < 0.01 and distance_error < 2):
-                        # Both front and ego-vehicle are stopped (at a very low speed)
-                        phy_acceleration = -1.0
-                    
+                else:                    
                     if(rel_speed < 0):
                         # Front vehicle is moving faster
                         desired_speed = self.MAX_SPEED if (front_vehicle_speed * 1.1 > self.MAX_SPEED) else (front_vehicle_speed * 1.1)
-                        accel = (desired_speed - self.speed)
+                        accel = (desired_speed - self.speed) / 5
                     else:
                         # Ego-vehicle is moving faster
                         accel = (front_vehicle_speed - self.speed) / rel_time
-                    
-                    self.target_speed = accel * delta_time + self.speed
+                
+                self.target_speed = accel * delta_time + self.speed
 
-                    if(self.target_speed > self.MAX_SPEED):
-                        self.target_speed = self.MAX_SPEED
-                    
-                    phy_acceleration, _ = self.physical_controller(delta_time, self.speed * 3.6, self.target_speed * 3.6, steering_angle = None)
-
+                if(self.target_speed > self.MAX_SPEED):
+                    self.target_speed = self.MAX_SPEED
+                
+                phy_acceleration, _ = self.physical_controller(delta_time, self.speed, self.target_speed, steering_angle = None)
                 phy_steering = 0.0
+                print(f"current acceleration: {phy_acceleration}")
                 self.phy_action = {"steering": phy_steering, "acceleration": phy_acceleration}
 
                 #### OLD ####
