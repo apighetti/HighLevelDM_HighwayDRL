@@ -514,65 +514,83 @@ class DecisionMakingVehicle(MDPVehicle):
         if(action == "ACC"):
 
             self.front_vehicle = self.get_front_vehicle()
-            print(f"front vehicle: {self.front_vehicle}")
             
             if(self.front_vehicle):
-                front_vehicle_speed = self.front_vehicle.speed
-                rel_speed = self.speed - front_vehicle_speed
-                self.safe_distance = self.get_safe_distance()
-                self.distance = self.lane_distance_to(self.front_vehicle, self.lane)
- 
-                print(f"Params:\n my speed: {round(self.speed,3)} \n front_vehicle_speed: {front_vehicle_speed} \n rel_speed : {rel_speed} \n safe_distance: {self.safe_distance} \n current distance: {self.distance}\n")
 
-                distance_error = self.distance - self.safe_distance
-                rel_time = distance_error / rel_speed
+                ################ MOMENTO CONTE ################
 
-                if(distance_error < 0):
-                    # Current distance is less than safety distance
-                    phy_acceleration = -1.0
-                    # TO-DO definire accel
+                sig = lambda a: (2 / (1 + np.exp(-a/5))) - 1
+                gap_weight = 1
+                target_time_gap = 2 # s
+                time_slot = 2 # s
 
+                # print(f"My position: {round(self.position[0],1)}, Front vehicle position: {round(self.front_vehicle.position[0],1)}")
+                clearance = self.front_vehicle.position[0] - self.position[0]
+                time_gap = clearance / (self.speed + 0.0001)
+                gap = time_gap - target_time_gap
+                d_speed = self.front_vehicle.speed + gap * gap_weight  
+                if d_speed > self.MAX_SPEED: 
+                    d_speed = self.MAX_SPEED
+                phy_acceleration = sig((d_speed - self.speed) / time_slot)
+                # return throttle
 
-                elif(self.distance >= self.safe_distance or (rel_time > 5 and front_vehicle_speed > 10)):
-                    # Front vehicle is too far
-                    phy_acceleration = 1.0
-                    # TO-DO definire accel
-    
-                else:                    
-                    if(rel_speed < 0):
-                        # Front vehicle is moving faster
-                        desired_speed = self.MAX_SPEED if (front_vehicle_speed * 1.1 > self.MAX_SPEED) else (front_vehicle_speed * 1.1)
-                        accel = (desired_speed - self.speed) / 5
-                    else:
-                        # Ego-vehicle is moving faster
-                        accel = (front_vehicle_speed - self.speed) / rel_time
-                
-                self.target_speed = accel * delta_time + self.speed
-
-                if(self.target_speed > self.MAX_SPEED):
-                    self.target_speed = self.MAX_SPEED
-                
-                phy_acceleration, _ = self.physical_controller(delta_time, self.speed, self.target_speed, steering_angle = None)
                 phy_steering = 0.0
-                print(f"current acceleration: {phy_acceleration}")
+                # print(f"current acceleration: {phy_acceleration}")
                 self.phy_action = {"steering": phy_steering, "acceleration": phy_acceleration}
 
-                #### OLD ####
-                # accl, brake =  self.compute_acceleration(self.ttc, self.target_speed, self.safe_distance, self.distance)
-                # steering = self.steering_control(self.target_lane_index)
+
+                front_vehicle_speed = self.front_vehicle.speed
+                self.safe_distance = self.get_safe_distance()
+                self.distance = self.lane_distance_to(self.front_vehicle, self.lane)
+
+ 
+                print(f"Params:\n my speed: {round(self.speed,3)} \n front_vehicle_speed: {round(front_vehicle_speed,3)} \n safe_distance: {round(self.safe_distance,3)} \n current distance: {round(self.distance,3)}\n")
+
+
+                ################ PDI tentative implementation ################
+
+                # front_vehicle_speed = self.front_vehicle.speed
+                # rel_speed = self.speed - front_vehicle_speed
+                # self.safe_distance = self.get_safe_distance()
+                # self.distance = self.lane_distance_to(self.front_vehicle, self.lane)
+
+ 
+                # print(f"Params:\n my speed: {round(self.speed,3)} \n front_vehicle_speed: {round(front_vehicle_speed,3)} \n safe_distance: {round(self.safe_distance,3)} \n current distance: {round(self.distance,3)}\n")
+
+                # distance_error = self.distance - self.safe_distance
+                # rel_time = distance_error / rel_speed
+                # print(f"rel_time: {rel_time}")
+
+                # if(distance_error < 0):
+                #     # Current distance is less than safety distance
+                #     phy_acceleration = -1.0
+                #     # TO-DO definire decel
+
+
+                # elif(self.distance >= self.safe_distance and (rel_time > 5 and front_vehicle_speed > 10)):
+                #     # Front vehicle is too far
+                #     phy_acceleration = 1.0
+                #     # TO-DO definire accel
+    
+                # else:                    
+                #     if(rel_speed < 0):
+                #         # Front vehicle is moving faster
+                #         desired_speed = self.MAX_SPEED if (front_vehicle_speed * 1.1 > self.MAX_SPEED) else (front_vehicle_speed * 1.1)
+                #         accel = (desired_speed - self.speed) / 5
+                #     else:
+                #         # Ego-vehicle is moving faster
+                #         accel = (front_vehicle_speed - self.speed) / rel_time
                 
-                # i_accl, i_brake, i_steering = self.normalize_parameters(accl, brake, steering)
-                
-                # params = self.update_physical_parameters(self.physical_parameters, i_accl, i_brake, i_steering)
-                
-                '''temp_res = {"steering": self.steering_control(self.target_lane_index),
-                        "acceleration": i_accl}'''
-                        
-                #self.phy_action = self.physical_controller(params)
-                #### END_OLD ####
-                
-                # return params
-                
+                #     self.target_speed = accel * delta_time + self.speed
+
+                #     if(self.target_speed > self.MAX_SPEED):
+                #         self.target_speed = self.MAX_SPEED
+                    
+                #     phy_acceleration, _ = self.physical_controller(delta_time, self.speed, self.target_speed, steering_angle = None)
+                # phy_steering = 0.0
+                # print(f"current acceleration: {phy_acceleration}")
+                # self.phy_action = {"steering": phy_steering, "acceleration": phy_acceleration}
+
         elif(action == "OVERTAKE"):
             return
         elif(action == "RIGHTMOST_LANE"):
