@@ -394,9 +394,7 @@ class DecisionMakingVehicle(MDPVehicle):
             else:
                 self.acc_flag = False
                 print("ACC OFF")
-        
-            print(f"My speed: {self.speed}")
-                
+                        
         elif action == "OVERTAKE":
             # DO SOMETHING
             print("OVERTAKE")
@@ -533,15 +531,10 @@ class DecisionMakingVehicle(MDPVehicle):
                 phy_steering = 0.0
                 self.phy_action = {"steering": phy_steering, "acceleration": phy_acceleration}
 
-
-                front_vehicle_speed = self.front_vehicle.speed
                 self.distance = self.lane_distance_to(self.front_vehicle, self.lane)
 
-
-                print(f"Params:\n my speed: {round(self.speed,3)} \
-                    \n front_vehicle_speed: {round(front_vehicle_speed,3)} \
-                    \n current distance: {round(self.distance,3)}\
-                    \n current acceleration: {phy_acceleration}")
+                print(f"current distance: {round(self.distance,3)}\
+                    \n current acceleration: {round(phy_acceleration,3)}")
 
 
                 ################ PDI tentative implementation ################
