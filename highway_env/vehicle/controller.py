@@ -517,7 +517,7 @@ class DecisionMakingVehicle(MDPVehicle):
             
             if(self.front_vehicle):
 
-                ################ MOMENTO CONTE ################
+                ################ PROF BERTA SIGMOID ################
 
                 sig = lambda a: (2 / (1 + np.exp(-a/5))) - 1
                 gap_weight = 1
@@ -528,11 +528,10 @@ class DecisionMakingVehicle(MDPVehicle):
                 clearance = self.front_vehicle.position[0] - self.position[0]
                 time_gap = clearance / (self.speed + 0.0001)
                 gap = time_gap - target_time_gap
-                d_speed = self.front_vehicle.speed + gap * gap_weight  
+                d_speed = self.front_vehicle.speed + gap * gap_weight
                 if d_speed > self.MAX_SPEED: 
                     d_speed = self.MAX_SPEED
-                phy_acceleration = sig((d_speed - self.speed) / time_slot)
-                # return throttle
+                phy_acceleration = sig((d_speed - self.speed) / time_slot) * 5 # multiplication for continuous action environment range [-5,5]
 
                 phy_steering = 0.0
                 # print(f"current acceleration: {phy_acceleration}")
@@ -544,7 +543,10 @@ class DecisionMakingVehicle(MDPVehicle):
                 self.distance = self.lane_distance_to(self.front_vehicle, self.lane)
 
  
-                print(f"Params:\n my speed: {round(self.speed,3)} \n front_vehicle_speed: {round(front_vehicle_speed,3)} \n safe_distance: {round(self.safe_distance,3)} \n current distance: {round(self.distance,3)}\n")
+                print(f"Params:\n my speed: {round(self.speed,3)} \
+                    \n front_vehicle_speed: {round(front_vehicle_speed,3)} \
+                    \n safe_distance: {round(self.safe_distance,3)} \
+                    \n current distance: {round(self.distance,3)}\n")
 
 
                 ################ PDI tentative implementation ################
