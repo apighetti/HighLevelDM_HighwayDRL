@@ -233,6 +233,17 @@ class ObservationGraphics(object):
         from highway_env.envs.common.observation import LidarObservation
         if isinstance(obs, LidarObservation):
             cls.display_grid(obs, sim_surface)
+        else: # Display vehicle speeds for testing purposes
+            myFont = pygame.font.SysFont("Arial", 18)
+
+            egoDisplay = myFont.render("Ego vehicle speed: "+str(round(obs.observer_vehicle.speed, 1))+" m/s", 1, (255, 255, 255))
+            sim_surface.blit(egoDisplay, (20,10))
+
+            if (obs.observer_vehicle.front_vehicle):
+                fvDisplay = \
+                    myFont.render("Front vehicle speed: "+str(round(obs.observer_vehicle.front_vehicle.speed, 1))+" m/s", 1, (255, 255, 255))
+                sim_surface.blit(fvDisplay, (20,30))
+        
 
     @classmethod
     def display_grid(cls, lidar_observation, surface):

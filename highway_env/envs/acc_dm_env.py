@@ -25,10 +25,11 @@ class ACCDecisionMakingEnv(AbstractEnv):
             "action": {
                 "type": "DecisionMakingAction",
             },
-            "lanes_count": 1,
+            "lanes_count": 2,
             "vehicles_count": 1,
             "controlled_vehicles": 1,
             "initial_lane_id": 0,
+            "npc_initial_lane_id": 0,
             "duration": 40,  # [s]
             "ego_spacing": 2,
             "vehicles_density": 1,
@@ -70,7 +71,7 @@ class ACCDecisionMakingEnv(AbstractEnv):
             self.road.vehicles.append(vehicle)
 
             for _ in range(others):
-                vehicle = other_vehicles_type.create_random(self.road, spacing=1 / self.config["vehicles_density"])
+                vehicle = other_vehicles_type.create_random(self.road, lane_id=self.config["npc_initial_lane_id"], spacing=1 / self.config["vehicles_density"])
                 vehicle.randomize_behavior()
                 self.road.vehicles.append(vehicle)
 

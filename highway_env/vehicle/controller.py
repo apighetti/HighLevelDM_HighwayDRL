@@ -507,7 +507,7 @@ class DecisionMakingVehicle(MDPVehicle):
 
         return accel_output, steering_output
         
-    def tactical_dm(self, delta_time: float, action: Union[dict, str] = None) -> None:
+    def tactical_dm(self, action: Union[dict, str] = None) -> None:
         
         ''' Tactical module that handles heuristic for each possible action'''
         
@@ -517,14 +517,11 @@ class DecisionMakingVehicle(MDPVehicle):
             
             if(self.front_vehicle):
 
-                ################ PROF BERTA SIGMOID ################
-
                 sig = lambda a: (2 / (1 + np.exp(-a/5))) - 1
                 gap_weight = 1
                 target_time_gap = 2 # s
                 time_slot = 2 # s
 
-                # print(f"My position: {round(self.position[0],1)}, Front vehicle position: {round(self.front_vehicle.position[0],1)}")
                 clearance = self.front_vehicle.position[0] - self.position[0]
                 time_gap = clearance / (self.speed + 0.0001)
                 gap = time_gap - target_time_gap
@@ -534,19 +531,17 @@ class DecisionMakingVehicle(MDPVehicle):
                 phy_acceleration = sig((d_speed - self.speed) / time_slot) * 5 # multiplication for continuous action environment range [-5,5]
 
                 phy_steering = 0.0
-                # print(f"current acceleration: {phy_acceleration}")
                 self.phy_action = {"steering": phy_steering, "acceleration": phy_acceleration}
 
 
                 front_vehicle_speed = self.front_vehicle.speed
-                self.safe_distance = self.get_safe_distance()
                 self.distance = self.lane_distance_to(self.front_vehicle, self.lane)
 
- 
+
                 print(f"Params:\n my speed: {round(self.speed,3)} \
                     \n front_vehicle_speed: {round(front_vehicle_speed,3)} \
-                    \n safe_distance: {round(self.safe_distance,3)} \
-                    \n current distance: {round(self.distance,3)}\n")
+                    \n current distance: {round(self.distance,3)}\
+                    \n current acceleration: {phy_acceleration}")
 
 
                 ################ PDI tentative implementation ################
@@ -602,7 +597,7 @@ class DecisionMakingVehicle(MDPVehicle):
     def step(self, dt: float) -> None:
         
         if(self.acc_flag):
-            self.tactical_dm(dt, "ACC")
+            self.tactical_dm("ACC")
         # elif(self.ovtk_flag):
         #     self.tactical_dm("OVERTAKE")
         # elif(self.rml_flag):
