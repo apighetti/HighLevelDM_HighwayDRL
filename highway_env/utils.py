@@ -372,3 +372,11 @@ def solve_trinom(a, b, c):
         return (-b - np.sqrt(delta)) / (2 * a), (-b + np.sqrt(delta)) / (2 * a)
     else:
         return None, None
+    
+### THESIS FUNCTIONS ###
+    
+def sigmoid(x):
+    if x > 0:
+        return (2 / (1 + np.exp(-x/2.5))) - 1
+    else:
+        return (2 / (1 + np.exp(-x/0.25))) - 1

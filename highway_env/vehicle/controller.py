@@ -355,7 +355,8 @@ class DecisionMakingVehicle(MDPVehicle):
                  front_vehicle: Optional[Vehicle] = None,
                  velocity_integral : Optional[float] = 0.0,
                  prev_velocity : Optional[float] = 0.0,
-                 acc_flag: Optional[Boolean] = False #,
+                 acc_flag: Optional[Boolean] = False ,
+                 throttle: float = 0.0 #,
                 #  distance: Optional[float] = None,
                 #  ttc: Optional[float] = None,
                 #  safe_distance: Optional[float] = None
@@ -370,6 +371,7 @@ class DecisionMakingVehicle(MDPVehicle):
         self.acc_flag = acc_flag
         self.velocity_integral = velocity_integral
         self.prev_velocity = prev_velocity
+        self.throttle = throttle
 
         # self.ttc = ttc
         # self.distance = distance
@@ -515,19 +517,29 @@ class DecisionMakingVehicle(MDPVehicle):
             
             if(self.front_vehicle):
 
-                sig = lambda a: (2 / (1 + np.exp(-a/5))) - 1
-                gap_weight = 1
-                target_time_gap = 2 # s
-                time_slot = 2 # s
+                #sig = lambda a: (2 / (1 + np.exp(-a/5))) - 1
+                
+                '''def sig(x):
+                    if x > 0:
+                        return (2 / (1 + np.exp(-x/2.5))) - 1
+                    else:
+                        return (2 / (1 + np.exp(-x/0.25))) - 1'''
 
-                clearance = self.front_vehicle.position[0] - self.position[0]
-                time_gap = clearance / (self.speed + 0.0001)
+                gap_weight = 1
+                target_time_gap = 2 # [s]
+                time_slot = 2 # [s]
+
+                clearance = self.front_vehicle.position[0] - self.position[0] #[m]
+                time_gap = clearance / (self.speed + 0.0001) #[s]
                 gap = time_gap - target_time_gap
                 d_speed = self.front_vehicle.speed + gap * gap_weight
+                
                 if d_speed > self.MAX_SPEED: 
                     d_speed = self.MAX_SPEED
-                phy_acceleration = sig((d_speed - self.speed) / time_slot) * 5 # multiplication for continuous action environment range [-5,5]
-
+                    
+                phy_acceleration = utils.sigmoid((d_speed - self.speed) / time_slot) * 5 # multiplication for continuous action environment range [-5,5]
+                self.throttle = phy_acceleration
+                
                 phy_steering = 0.0
                 self.phy_action = {"steering": phy_steering, "acceleration": phy_acceleration}
 
