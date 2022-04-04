@@ -246,6 +246,12 @@ class ObservationGraphics(object):
                 clearance = obs.observer_vehicle.front_vehicle.position[0] - obs.observer_vehicle.position[0]
                 clearance_display = myFont.render("Headway: " + str(round(clearance,2)) + " m", 1, (255,255,255))
                 acceleration_display = myFont.render("Throttle: " + str(round(obs.observer_vehicle.throttle,3)) + " m/s\u00b2", 1, (255,255,255))
+                try:
+                    with open('speeds_throttle.csv','a') as f:
+                        f.write(f"{str(obs.observer_vehicle.speed)},{str(obs.observer_vehicle.front_vehicle.speed)},{str(obs.observer_vehicle.throttle)}\n")
+                except KeyboardInterrupt:
+                    f.close()
+                    
 
                 
                 timegap_display = myFont.render("Time gap: " + \

@@ -1,3 +1,4 @@
+import math
 from pickle import TRUE
 import time
 from typing import List, Tuple, Union, Optional
@@ -355,7 +356,7 @@ class DecisionMakingVehicle(MDPVehicle):
                  front_vehicle: Optional[Vehicle] = None,
                  velocity_integral : Optional[float] = 0.0,
                  prev_velocity : Optional[float] = 0.0,
-                 acc_flag: Optional[Boolean] = False ,
+                 acc_flag: Optional[Boolean] = False,
                  throttle: float = 0.0 #,
                 #  distance: Optional[float] = None,
                 #  ttc: Optional[float] = None,
@@ -538,15 +539,15 @@ class DecisionMakingVehicle(MDPVehicle):
                     d_speed = self.MAX_SPEED
                     
                 phy_acceleration = utils.sigmoid((d_speed - self.speed) / time_slot) * 5 # multiplication for continuous action environment range [-5,5]
-                self.throttle = phy_acceleration
+                self.throttle = phy_acceleration 
                 
                 phy_steering = 0.0
                 self.phy_action = {"steering": phy_steering, "acceleration": phy_acceleration}
 
                 self.distance = self.lane_distance_to(self.front_vehicle, self.lane)
 
-                print(f"current distance: {round(self.distance,3)}\
-                    \n current acceleration: {round(phy_acceleration,3)}")
+                # print(f"current distance: {round(self.distance,3)}\
+                #     \n current acceleration: {round(phy_acceleration,3)}")
 
 
                 ################ PDI tentative implementation ################
