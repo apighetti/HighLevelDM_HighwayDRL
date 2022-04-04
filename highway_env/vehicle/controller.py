@@ -515,6 +515,9 @@ class DecisionMakingVehicle(MDPVehicle):
         if(action == "ACC"):
 
             self.front_vehicle = self.get_front_vehicle()
+            gap_weight = 1
+            target_time_gap = 2 # [s]
+            time_slot = 2 # [s]
             
             if(self.front_vehicle):
 
@@ -526,10 +529,6 @@ class DecisionMakingVehicle(MDPVehicle):
                     else:
                         return (2 / (1 + np.exp(-x/0.25))) - 1'''
 
-                gap_weight = 1
-                target_time_gap = 2 # [s]
-                time_slot = 2 # [s]
-
                 clearance = self.front_vehicle.position[0] - self.position[0] #[m]
                 time_gap = clearance / (self.speed + 0.0001) #[s]
                 gap = time_gap - target_time_gap
@@ -537,14 +536,16 @@ class DecisionMakingVehicle(MDPVehicle):
                 
                 if d_speed > self.MAX_SPEED: 
                     d_speed = self.MAX_SPEED
-                    
-                phy_acceleration = utils.sigmoid((d_speed - self.speed) / time_slot) * 5 # multiplication for continuous action environment range [-5,5]
-                self.throttle = phy_acceleration 
-                
-                phy_steering = 0.0
-                self.phy_action = {"steering": phy_steering, "acceleration": phy_acceleration}
+            else:
+                d_speed = self.MAX_SPEED
+            
+            phy_acceleration = utils.sigmoid((d_speed - self.speed) / time_slot) * 5 # multiplication for continuous action environment range [-5,5]
+            self.throttle = phy_acceleration 
+            
+            phy_steering = 0.0
+            self.phy_action = {"steering": phy_steering, "acceleration": phy_acceleration}
 
-                self.distance = self.lane_distance_to(self.front_vehicle, self.lane)
+            self.distance = self.lane_distance_to(self.front_vehicle, self.lane)
 
                 # print(f"current distance: {round(self.distance,3)}\
                 #     \n current acceleration: {round(phy_acceleration,3)}")
@@ -603,6 +604,7 @@ class DecisionMakingVehicle(MDPVehicle):
     def step(self, dt: float) -> None:
         
         if(self.acc_flag):
+            print(f"\n{dt}")
             self.tactical_dm("ACC")
         # elif(self.ovtk_flag):
         #     self.tactical_dm("OVERTAKE")
