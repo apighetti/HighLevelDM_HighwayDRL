@@ -376,13 +376,8 @@ def solve_trinom(a, b, c):
 ### THESIS FUNCTIONS ###
     
 def sigmoid(x):
-    thrs = 0.00005
-    if x <= -thrs:
+    if x < 0:
         return (2 / (1 + np.exp(-x/0.25))) - 1
-    if x > -thrs and x < 0:
-        return sigmoid(-thrs)
-    if x > 0 and x < thrs:
-        return sigmoid(thrs)
-    if x >= thrs:
+    if x > 0:
         return (2 / (1 + np.exp(-x/2.5))) - 1
     return 0

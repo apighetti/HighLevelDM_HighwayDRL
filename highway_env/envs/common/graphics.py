@@ -186,7 +186,7 @@ class EventHandler(object):
             if event.key == pygame.K_RIGHT and action_type.control:
                 action_type.act(action_type.actions_indexes["ACC"])
             if event.key == pygame.K_LEFT and action_type.lateral:
-                action_type.act(action_type.actions_indexes["RIGHT-MOST_LANE"])
+                action_type.act(action_type.actions_indexes["RIGHTMOSTLANE"])
             if event.key == pygame.K_DOWN and action_type.lateral:
                 action_type.act(action_type.actions_indexes["OVERTAKE"])
 
