@@ -29,7 +29,7 @@ class DecisionMakingEnv(AbstractEnv):
                 "type": "DecisionMakingAction",
             },
             "lanes_count": 5,
-            "vehicles_count": 20,
+            "vehicles_count": 10,
             "controlled_vehicles": 1,
             "initial_lane_id": 0,
             "duration": 40,  # [s]
