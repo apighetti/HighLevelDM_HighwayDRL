@@ -427,7 +427,7 @@ class DecisionMakingVehicle(MDPVehicle):
 
     def physical_validity_modifier(self, target_speed = None , target_time_gap = None):
         if(target_time_gap):
-            return 3.2 * target_time_gap
+            return 3 * target_time_gap
         else:
             return self.speed_control(target_speed)
         
