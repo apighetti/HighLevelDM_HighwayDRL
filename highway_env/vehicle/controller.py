@@ -32,7 +32,7 @@ class ControlledVehicle(Vehicle):
     KP_A = 1 / TAU_ACC
     KP_HEADING = 1 / TAU_HEADING
     KP_LATERAL = 1 / TAU_LATERAL  # [1/s]
-    MAX_STEERING_ANGLE = np.pi / 3  # [rad]
+    MAX_STEERING_ANGLE = np.pi / 6  # [rad]
     DELTA_SPEED = 5  # [m/s]
 
     def __init__(self,
@@ -107,7 +107,7 @@ class ControlledVehicle(Vehicle):
                 self.target_lane_index = target_lane_index
                 
         if self.phy_action:
-            action = self.phy_action
+            action = self.phy_action    # our defined action
         else:
             action = {"steering": self.steering_control(self.target_lane_index),
                   "acceleration": self.speed_control(self.target_speed)}
@@ -349,6 +349,7 @@ class DecisionMakingVehicle(MDPVehicle):
                  acc_flag: Optional[Boolean] = False,
                  rml_flag: Optional[Boolean] = False,
                  overtake_flag: Optional[Boolean] = False,
+                 my_lane: Optional[int] = 0,
                  throttle: float = 0.0 #,
                  ) -> None:
                  
@@ -363,6 +364,7 @@ class DecisionMakingVehicle(MDPVehicle):
         self.overtake_flag = overtake_flag
         self.velocity_integral = velocity_integral
         self.prev_velocity = prev_velocity
+        self.my_lane = my_lane
         self.throttle = throttle
 
     def act(self, action: Union[dict, str] = None) -> None:
@@ -377,7 +379,9 @@ class DecisionMakingVehicle(MDPVehicle):
         """
         
         if action == "ACC":
-            
+            if(self.rml_flag):
+                self.rml_flag = False
+
             if(not self.acc_flag):
                 self.acc_flag = True
                 print("ACC ON")
@@ -395,10 +399,14 @@ class DecisionMakingVehicle(MDPVehicle):
                 print("OVERTAKE OFF")
 
         elif action == "RIGHTMOSTLANE":
-            # DO SOMETHING
+            if(self.acc_flag):
+                self.acc_flag = False
+                self.phy_action = None
+
             if(not self.rml_flag):
                 self.rml_flag = True
-                print("RIGHTMOSTLANE ON")
+                self.my_lane = self.lane_index[2] + 1
+                print(f"RIGHTMOSTLANE ON: {self.my_lane}")
             else:
                 self.rml_flag = False
                 print("RIGHTMOSTLANE OFF")
@@ -416,19 +424,17 @@ class DecisionMakingVehicle(MDPVehicle):
     def get_safe_distance(self) -> float:
         return (self.speed * 3.6 / 10)**2
 
-    def time_gap_error(self, vehicleA: Vehicle, vehicleB: Vehicle):
-        target_time_gap = 2 # [s]              
+    def time_gap_error(self, target_time_gap: int, vehicleA: Vehicle, vehicleB: Vehicle) -> float:
 
         clearance = vehicleB.position[0] - vehicleA.position[0] #[m]
         time_gap = clearance / (vehicleA.speed + 0.0001) #[s]
         gap = time_gap - target_time_gap
-        d_speed = vehicleB.speed + gap * 1
-        
-        return gap, d_speed
-    
-    def physical_validity_modifier(self, target_speed = None , target_time_gap = None, steering = None):
+
+        return gap
+
+    def physical_validity_modifier(self, target_speed = None , target_time_gap = None):
         if(target_time_gap):
-            return 3.2 * target_time_gap
+            return 3 * target_time_gap
         else:
             return self.speed_control(target_speed)
         
@@ -444,6 +450,9 @@ class DecisionMakingVehicle(MDPVehicle):
             gap, d_speed = self.time_gap_error(self, self.front_vehicle)
             
             if(self.front_vehicle):
+                gap = self.time_gap_error(2, self, self.front_vehicle)
+                d_speed = self.front_vehicle.speed + gap * 1
+
                 if(d_speed > self.MAX_SPEED):
                     phy_acceleration = self.physical_validity_modifier(target_speed=self.MAX_SPEED)
                 else:
@@ -492,38 +501,44 @@ class DecisionMakingVehicle(MDPVehicle):
                             super().act("LANE_LEFT")
                             
                     else:
-                        super().act("LANE_LEFT")
-                        
-                        
-                        
-                    
-                    
-                    
-                    
-                    
-                    
-                        
+                        super().act("LANE_LEFT")      
                 else:
                     return
             return
         
         elif(action == "RIGHTMOSTLANE"):
             lanes_count = len(self.road.network.lanes_list())
-            curr_lane = self.lane_index[2]
+            curr_lane_index = self.lane_index
+            print(f"my lane: {self.my_lane}, curr lane + 1: {curr_lane_index[2] + 1}")
 
-            if(curr_lane != lanes_count-1):
-                super().act("LANE_RIGHT")
+            if (self.my_lane == curr_lane_index[2] + 1):
+                if(curr_lane_index[2] != lanes_count-1):
+                    # if(curr_lane_index[2] == self.prev_lane_index + 1):    
+                    next_lane_index = (curr_lane_index[0], curr_lane_index[1], curr_lane_index[2] + 1)
+                    right_front_vehicle, right_rear_vehicle = self.road.neighbour_vehicles(self, next_lane_index)
 
-            print(f"\ncurr lane index = {curr_lane}, target lane index: {self.target_lane_index}")
-
-                               
+                    if(right_rear_vehicle and not right_front_vehicle):
+                        # print(f"{curr_lane_index[2]} RRV: {right_rear_vehicle} - time gap error {self.time_gap_error(1.5, right_rear_vehicle, self)}")
+                        if(self.time_gap_error(1.5, right_rear_vehicle, self) > 0):
+                            self.my_lane = curr_lane_index[2] + 2
+                            super().act("LANE_RIGHT")
+                    elif(right_front_vehicle and not right_rear_vehicle):
+                        # print(f"{curr_lane_index[2]} RFV: {right_front_vehicle} - time gap error {self.time_gap_error(2, self, right_front_vehicle)}")
+                        if(self.time_gap_error(2, self, right_front_vehicle) > 0):
+                            self.my_lane = curr_lane_index[2] + 2
+                            super().act("LANE_RIGHT")
+                    elif(right_front_vehicle and right_rear_vehicle):
+                        # print(f"{curr_lane_index[2]} RFV: {right_front_vehicle}, RRV: {right_rear_vehicle} - time gap error front {self.time_gap_error(2, self, right_front_vehicle)} - time gap error rear {self.time_gap_error(1.5, right_rear_vehicle, self)}")
+                        if(self.time_gap_error(2, self, right_front_vehicle) > 0 and self.time_gap_error(1.5, right_rear_vehicle, self) > 0):
+                            self.my_lane = curr_lane_index[2] + 2
+                            super().act("LANE_RIGHT")                               
 
 
     # Override simulation step method to implement continuous DM actions
     def step(self, dt: float) -> None:
         
         if(self.acc_flag):
-            print(f"\n{dt}")
+            # print(f"\n{dt}")
             self.tactical_dm("ACC")
         elif(self.overtake_flag):
              self.tactical_dm("OVERTAKE")
