@@ -348,6 +348,7 @@ class DecisionMakingVehicle(MDPVehicle):
                  prev_velocity : Optional[float] = 0.0,
                  acc_flag: Optional[Boolean] = False,
                  rml_flag: Optional[Boolean] = False,
+                 overtake_flag: Optional[Boolean] = False,
                  throttle: float = 0.0 #,
                  ) -> None:
                  
@@ -359,6 +360,7 @@ class DecisionMakingVehicle(MDPVehicle):
         self.front_vehicle = front_vehicle
         self.acc_flag = acc_flag
         self.rml_flag = rml_flag
+        self.overtake_flag = overtake_flag
         self.velocity_integral = velocity_integral
         self.prev_velocity = prev_velocity
         self.throttle = throttle
@@ -385,7 +387,12 @@ class DecisionMakingVehicle(MDPVehicle):
                         
         elif action == "OVERTAKE":
             # DO SOMETHING
-            print("OVERTAKE")
+            if(not self.overtake_flag):
+                self.overtake_flag = True
+                print("OVERTAKE ON")
+            else:
+                self.overtake_flag = False
+                print("OVERTAKE OFF")
 
         elif action == "RIGHTMOSTLANE":
             # DO SOMETHING
@@ -409,6 +416,16 @@ class DecisionMakingVehicle(MDPVehicle):
     def get_safe_distance(self) -> float:
         return (self.speed * 3.6 / 10)**2
 
+    def time_gap_error(self, vehicleA: Vehicle, vehicleB: Vehicle):
+        target_time_gap = 2 # [s]              
+
+        clearance = vehicleB.position[0] - vehicleA.position[0] #[m]
+        time_gap = clearance / (vehicleA.speed + 0.0001) #[s]
+        gap = time_gap - target_time_gap
+        d_speed = vehicleB.speed + gap * 1
+        
+        return gap, d_speed
+    
     def physical_validity_modifier(self, target_speed = None , target_time_gap = None, steering = None):
         if(target_time_gap):
             return 3.2 * target_time_gap
@@ -420,17 +437,13 @@ class DecisionMakingVehicle(MDPVehicle):
         ''' Tactical module that handles heuristic for each possible action'''
         
         if(action == "ACC"):
+            
+            '''Adaptive Cruise Control. The ego vehicle keeps the time gap from the front vehicle '''
 
-            self.front_vehicle = self.get_front_vehicle()
+            self.front_vehicle = self.get_front_vehicle()            
+            gap, d_speed = self.time_gap_error(self, self.front_vehicle)
             
             if(self.front_vehicle):
-                target_time_gap = 2 # [s]              
-
-                clearance = self.front_vehicle.position[0] - self.position[0] #[m]
-                time_gap = clearance / (self.speed + 0.0001) #[s]
-                gap = time_gap - target_time_gap
-                d_speed = self.front_vehicle.speed + gap * 1
-
                 if(d_speed > self.MAX_SPEED):
                     phy_acceleration = self.physical_validity_modifier(target_speed=self.MAX_SPEED)
                 else:
@@ -445,7 +458,55 @@ class DecisionMakingVehicle(MDPVehicle):
             self.phy_action = {"steering": phy_steering, "acceleration": phy_acceleration}
 
         elif(action == "OVERTAKE"):
+            
+            '''Left overtake action. If the ego vehicle is driving faster than the front vehicle
+               then it will perform a left overtake.  '''
+
+            if self.lane_index[2] > 0:
+                if self.get_front_vehicle():
+                    left_lane_index = self.lane_index[0], self.lane_index[1], self.lane_index[2]-1
+                    front_left_vehicle, rear_left_vehicle = self.road.neighbour_vehicles(self, left_lane_index)
+                    
+                    if rear_left_vehicle and not front_left_vehicle:
+                        print("Rear Left Vehicle: " + str(rear_left_vehicle)+"\n")
+                        rear_gap, _ = self.time_gap_error(rear_left_vehicle, self)  
+                        print(str(rear_gap)+"\n")
+                        if rear_gap > 0:
+                            super().act("LANE_LEFT")  
+                    
+                    elif front_left_vehicle and not rear_left_vehicle:
+                        print("Front Left Vehicle: " + str(front_left_vehicle)+"\n")
+                        front_gap, _ = self.time_gap_error(self, front_left_vehicle)
+                        print(str(front_gap)+"\n")
+                        if front_gap > 0:
+                            super().act("LANE_LEFT")
+                    
+                    elif front_left_vehicle and rear_left_vehicle:
+                        print("Rear Left Vehicle: " + str(rear_left_vehicle) +"\n")
+                        print("Front Left Vehicle: " + str(front_left_vehicle) +"\n")
+                        rear_gap, _ = self.time_gap_error(rear_left_vehicle, self)  
+                        front_gap, _ = self.time_gap_error(self, front_left_vehicle)
+                        print(str(rear_gap)+"\n")
+                        print(str(front_gap)+"\n")
+                        if front_gap > 0 and rear_gap > 0:
+                            super().act("LANE_LEFT")
+                            
+                    else:
+                        super().act("LANE_LEFT")
+                        
+                        
+                        
+                    
+                    
+                    
+                    
+                    
+                    
+                        
+                else:
+                    return
             return
+        
         elif(action == "RIGHTMOSTLANE"):
             lanes_count = len(self.road.network.lanes_list())
             curr_lane = self.lane_index[2]
@@ -464,8 +525,8 @@ class DecisionMakingVehicle(MDPVehicle):
         if(self.acc_flag):
             print(f"\n{dt}")
             self.tactical_dm("ACC")
-        # elif(self.ovtk_flag):
-        #     self.tactical_dm("OVERTAKE")
+        elif(self.overtake_flag):
+             self.tactical_dm("OVERTAKE")
         elif(self.rml_flag):
             self.tactical_dm("RIGHTMOSTLANE")        
 
