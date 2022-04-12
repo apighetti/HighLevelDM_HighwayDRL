@@ -1,4 +1,5 @@
 import math
+from optparse import Option
 from pickle import TRUE
 import time
 from typing import List, Tuple, Union, Optional
@@ -352,6 +353,8 @@ class DecisionMakingVehicle(MDPVehicle):
                  acc_flag: Optional[Boolean] = False,
                  rml_flag: Optional[Boolean] = False,
                  overtake_flag: Optional[Boolean] = False,
+                 throttle: Optional[float] = 0.0,
+                 timer: Optional[int] = 0
                 #  my_lane: Optional[int] = 0,
                  ) -> None:
                  
@@ -364,6 +367,8 @@ class DecisionMakingVehicle(MDPVehicle):
         self.acc_flag = acc_flag
         self.rml_flag = rml_flag
         self.overtake_flag = overtake_flag
+        self.throttle = throttle
+        self.timer = timer
         self.velocity_integral = velocity_integral
         self.prev_velocity = prev_velocity
         # self.my_lane = my_lane
@@ -406,6 +411,7 @@ class DecisionMakingVehicle(MDPVehicle):
 
             if(not self.rml_flag):
                 self.rml_flag = True
+                self.timer = 0
                 # self.my_lane = self.lane_index[2] + 1
                 # print(f"RIGHTMOSTLANE ON: {self.my_lane}")
             else:
@@ -448,8 +454,7 @@ class DecisionMakingVehicle(MDPVehicle):
             '''Adaptive Cruise Control. The ego vehicle keeps the time gap from the front vehicle '''
 
             self.front_vehicle = self.get_front_vehicle()            
-            gap, d_speed = self.time_gap_error(self, self.front_vehicle)
-            
+
             if(self.front_vehicle):
                 gap = self.time_gap_error(2, self, self.front_vehicle)
                 d_speed = self.front_vehicle.speed + gap * 1
@@ -462,6 +467,7 @@ class DecisionMakingVehicle(MDPVehicle):
                 phy_acceleration = self.physical_validity_modifier(target_speed=self.MAX_SPEED)
             
             self.distance = self.lane_distance_to(self.front_vehicle, self.lane)
+            self.throttle = phy_acceleration
 
             phy_steering = 0.0
             self.phy_action = {"steering": phy_steering, "acceleration": phy_acceleration}
@@ -509,18 +515,24 @@ class DecisionMakingVehicle(MDPVehicle):
         elif(action == "RIGHTMOSTLANE"):
             lanes_count = len(self.road.network.lanes_list())
             curr_lane_index = self.lane_index
-            # print(f"my lane: {self.my_lane}, curr lane + 1: {curr_lane_index[2] + 1}")
-
             # if (self.my_lane == curr_lane_index[2] + 1):
 
-
+            print(f"curr lane index: {curr_lane_index[2]}, lanes count: {lanes_count-1}")
             if(curr_lane_index[2] != lanes_count-1):
+
+                if(self.timer != 150):
+                    super().act("IDLE")
+                    self.phy_action = None
+                    self.timer += 1
+                else:
                     phy_acceleration = 0.0
                     self.phy_action = {"steering": 0.0, "acceleration": phy_acceleration}
                     super().act("LANE_RIGHT")
-                    
-                    
-                    
+                    self.timer = 0
+                
+                print(f"timer: {self.timer}")
+            else:
+                self.phy_action = None                    
                     
                     # next_lane_index = (curr_lane_index[0], curr_lane_index[1], curr_lane_index[2] + 1)
                     # right_front_vehicle, right_rear_vehicle = self.road.neighbour_vehicles(self, next_lane_index)
