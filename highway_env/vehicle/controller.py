@@ -522,7 +522,7 @@ class DecisionMakingVehicle(MDPVehicle):
 
                 if(self.timer != 150):
                     super().act("IDLE")
-                    self.phy_action = None
+                    self.phy_action = {"steering": 0.0, "acceleration": 0.0}
                     self.timer += 1
                 else:
                     phy_acceleration = 0.0
@@ -532,7 +532,7 @@ class DecisionMakingVehicle(MDPVehicle):
                 
                 print(f"timer: {self.timer}")
             else:
-                self.phy_action = None                    
+                self.phy_action = {"steering": 0.0, "acceleration": 0.0}                    
                     
                     # next_lane_index = (curr_lane_index[0], curr_lane_index[1], curr_lane_index[2] + 1)
                     # right_front_vehicle, right_rear_vehicle = self.road.neighbour_vehicles(self, next_lane_index)
