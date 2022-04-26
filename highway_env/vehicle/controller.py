@@ -493,8 +493,8 @@ class DecisionMakingVehicle(MDPVehicle):
                         self.phy_action = {"steering": 0.0, "acceleration": phy_acceleration}
                         super().act("LANE_LEFT")
 
-                else:
-                    self.phy_action = {"steering": 0.0, "acceleration": 0.0}  
+            else:
+                self.phy_action = {"steering": 0.0, "acceleration": 0.0}  
 
                     # left_lane_index = self.lane_index[0], self.lane_index[1], self.lane_index[2]-1
                     # front_left_vehicle, rear_left_vehicle = self.road.neighbour_vehicles(self, left_lane_index)
