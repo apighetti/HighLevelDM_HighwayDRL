@@ -29,6 +29,7 @@ class DecisionMakingEnv(AbstractEnv):
                 "type": "DecisionMakingAction",
             },
             "lanes_count": 5,
+            "screen_width": 1250,
             "vehicles_count": 50,
             "controlled_vehicles": 1,
             "initial_lane_id": 4,

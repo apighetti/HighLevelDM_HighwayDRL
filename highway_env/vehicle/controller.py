@@ -392,10 +392,10 @@ class DecisionMakingVehicle(MDPVehicle):
 
             if(not self.acc_flag):
                 self.acc_flag = True
-                print("ACC ON")
+                # print("ACC ON")
             else:
                 self.acc_flag = False
-                print("ACC OFF")
+                # print("ACC OFF")
                         
         elif action == "OVERTAKE":
             if(self.acc_flag):
@@ -406,10 +406,10 @@ class DecisionMakingVehicle(MDPVehicle):
             if(not self.overtake_flag):
                 self.overtake_flag = True
                 self.my_lane = self.lane_index[2] - 1
-                print("OVERTAKE ON")
+                # print("OVERTAKE ON")
             else:
                 self.overtake_flag = False
-                print("OVERTAKE OFF")
+                # print("OVERTAKE OFF")
 
         elif action == "RIGHTMOSTLANE":
             if(self.acc_flag):
@@ -422,10 +422,10 @@ class DecisionMakingVehicle(MDPVehicle):
                 self.timer = 0
                 self.phy_action = None
                 # self.my_lane = self.lane_index[2] + 1
-                print("RIGHTMOSTLANE ON")
+                # print("RIGHTMOSTLANE ON")
             else:
                 self.rml_flag = False
-                print("RIGHTMOSTLANE OFF")
+                # print("RIGHTMOSTLANE OFF")
         else:
             super().act(action)
             return
