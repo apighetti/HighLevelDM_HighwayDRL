@@ -450,9 +450,10 @@ class DecisionMakingVehicle(MDPVehicle):
 
     def physical_validity_modifier(self, target_speed = None , target_time_gap = None):
         if(target_time_gap):
-            return 3 * target_time_gap
+            return 3 * target_time_gap if target_time_gap < 0 else target_time_gap * 2.5
         else:
-            return self.speed_control(target_speed)
+            throttle = self.speed_control(target_speed)
+            return throttle if throttle < 0 else throttle * 0.7
         
     def tactical_dm(self, action: Union[dict, str] = None) -> None:
         
@@ -482,6 +483,7 @@ class DecisionMakingVehicle(MDPVehicle):
             
             '''Left overtake action. If the ego vehicle is driving faster than the front vehicle
                then it will perform a left overtake.  '''
+
             curr_lane_index = self.lane_index
             phy_acceleration = self.physical_validity_modifier(target_speed=self.MAX_SPEED)
             self.throttle = phy_acceleration

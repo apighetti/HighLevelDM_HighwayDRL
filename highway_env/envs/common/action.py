@@ -288,8 +288,6 @@ class DecisionMakingAction(ActionType):
                  front_vehicle: Optional[Vehicle] = None,
                  velocity_integral : Optional[float] = None,
                  prev_velocity : Optional[float] = None,
-                 #  ttc: Optional[float] = None,
-                 acc_flag: Optional[Boolean] = False,
                  **kwargs) -> None:
         """
         Create a discrete action space of meta-actions.
@@ -306,8 +304,6 @@ class DecisionMakingAction(ActionType):
         self.velocity_integral = velocity_integral if velocity_integral is not None else 0.0
         self.prev_velocity = prev_velocity if prev_velocity is not None else 0.0
         self.front_vehicle = front_vehicle
-        # self.ttc = ttc
-        self.acc_flag = acc_flag
         self.actions = self.ACTIONS_ALL if control and lateral \
             else self.ACTIONS_CTRL if control \
             else self.ACTIONS_LAT if lateral \
@@ -321,7 +317,7 @@ class DecisionMakingAction(ActionType):
 
     @property
     def vehicle_class(self) -> Callable:
-        return functools.partial(DecisionMakingVehicle, target_speeds=self.target_speeds, front_vehicle=self.front_vehicle, acc_flag=self.acc_flag)
+        return functools.partial(DecisionMakingVehicle, target_speeds=self.target_speeds, front_vehicle=self.front_vehicle)
 
     def act(self, action: int) -> None:
         self.controlled_vehicle.act(self.actions[action])
