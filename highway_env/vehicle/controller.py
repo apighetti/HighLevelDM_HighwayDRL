@@ -354,8 +354,8 @@ class DecisionMakingVehicle(MDPVehicle):
                  rml_flag: Optional[Boolean] = False,
                  overtake_flag: Optional[Boolean] = False,
                  throttle: Optional[float] = 0.0,
-                 timer: Optional[int] = 0
-                #  my_lane: Optional[int] = 0,
+                 timer: Optional[int] = 0,
+                 my_lane: Optional[int] = 0
                  ) -> None:
                  
         """
@@ -371,7 +371,7 @@ class DecisionMakingVehicle(MDPVehicle):
         self.timer = timer
         self.velocity_integral = velocity_integral
         self.prev_velocity = prev_velocity
-        # self.my_lane = my_lane
+        self.my_lane = my_lane
 
     def act(self, action: Union[dict, str] = None) -> None:
         
@@ -405,6 +405,7 @@ class DecisionMakingVehicle(MDPVehicle):
 
             if(not self.overtake_flag):
                 self.overtake_flag = True
+                self.my_lane = self.lane_index[2] - 1
                 print("OVERTAKE ON")
             else:
                 self.overtake_flag = False
@@ -481,20 +482,18 @@ class DecisionMakingVehicle(MDPVehicle):
             
             '''Left overtake action. If the ego vehicle is driving faster than the front vehicle
                then it will perform a left overtake.  '''
+            curr_lane_index = self.lane_index
 
-            if (self.lane_index[2] > 0):
-                if (self.front_vehicle):
-                    gap = self.time_gap_error(2, self, self.front_vehicle)
-                    print(f"time gap to front vehicle: {gap}")
-                    self.distance = self.lane_distance_to(self.front_vehicle, self.lane)
-                    
-                    if(gap < 0):
-                        phy_acceleration = 0.0
-                        self.phy_action = {"steering": 0.0, "acceleration": phy_acceleration}
-                        super().act("LANE_LEFT")
-
-            else:
-                self.phy_action = {"steering": 0.0, "acceleration": 0.0}  
+            if (self.my_lane == curr_lane_index[2] - 1):
+                if (self.lane_index[2] > 0):
+                    if (self.front_vehicle):
+                        gap = self.time_gap_error(2, self, self.front_vehicle)
+                        print(f"time gap to front vehicle: {gap}, current lane {self.lane_index}")
+                        self.distance = self.lane_distance_to(self.front_vehicle, self.lane)
+                        
+                        if(gap < 0):
+                            self.my_lane = curr_lane_index[2] - 2
+                            super().act("LANE_LEFT")
 
                     # left_lane_index = self.lane_index[0], self.lane_index[1], self.lane_index[2]-1
                     # front_left_vehicle, rear_left_vehicle = self.road.neighbour_vehicles(self, left_lane_index)
