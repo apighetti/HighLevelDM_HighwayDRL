@@ -31,7 +31,7 @@ class DecisionMakingEnv(AbstractEnv):
             "lanes_count": 5,
             "vehicles_count": 10,
             "controlled_vehicles": 1,
-            "initial_lane_id": 0,
+            "initial_lane_id": 4,
             "duration": 40,  # [s]
             "ego_spacing": 2,
             "vehicles_density": 1,

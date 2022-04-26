@@ -240,24 +240,24 @@ class ObservationGraphics(object):
 
             egoDisplay = myFont.render("Ego vehicle speed: "+str(round(obs.observer_vehicle.speed, 2))+" m/s", 1, (255, 255, 255))
             sim_surface.blit(egoDisplay, (20,10))
+            acceleration_display = myFont.render("Throttle: " + str(round(obs.observer_vehicle.throttle,3)) + " m/s\u00b2", 1, (255,255,255))
+            sim_surface.blit(acceleration_display, (1000,5))
 
             if (obs.observer_vehicle.front_vehicle):
                 fvDisplay = myFont.render("Front vehicle speed: "+str(round(obs.observer_vehicle.front_vehicle.speed, 2))+" m/s", 1, (255, 255, 255))
                 clearance = obs.observer_vehicle.front_vehicle.position[0] - obs.observer_vehicle.position[0]
                 clearance_display = myFont.render("Headway: " + str(round(clearance,2)) + " m", 1, (255,255,255))
-                acceleration_display = myFont.render("Throttle: " + str(round(obs.observer_vehicle.throttle,3)) + " m/s\u00b2", 1, (255,255,255))
                 
-                try:
-                    with open('speed_throttle.csv','a') as f:
-                        f.write(f"{str(obs.observer_vehicle.speed)},{str(obs.observer_vehicle.front_vehicle.speed)},{str(obs.observer_vehicle.throttle)}\n")
-                except KeyboardInterrupt:
-                    f.close()
+                # try:
+                #     with open('speed_throttle.csv','a') as f:
+                #         f.write(f"{str(obs.observer_vehicle.speed)},{str(obs.observer_vehicle.front_vehicle.speed)},{str(obs.observer_vehicle.throttle)}\n")
+                # except KeyboardInterrupt:
+                #     f.close()
                 
                 
                 timegap_display = myFont.render("Time gap: " + \
                     str(round(clearance/obs.observer_vehicle.speed,2)) + " s" , 1 ,(255, 255, 255))
                 sim_surface.blit(fvDisplay, (20,30))
-                sim_surface.blit(acceleration_display, (1000,5))
                 sim_surface.blit(clearance_display, (1000,25))
                 sim_surface.blit(timegap_display, (1000,45))
         
