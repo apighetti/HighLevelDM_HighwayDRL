@@ -483,13 +483,15 @@ class DecisionMakingVehicle(MDPVehicle):
             '''Left overtake action. If the ego vehicle is driving faster than the front vehicle
                then it will perform a left overtake.  '''
             curr_lane_index = self.lane_index
+            phy_acceleration = self.physical_validity_modifier(target_speed=self.MAX_SPEED)
+            self.throttle = phy_acceleration
+            self.phy_action = {"steering": 0.0, "acceleration": phy_acceleration}
 
             if (self.my_lane == curr_lane_index[2] - 1):
                 if (self.lane_index[2] > 0):
                     if (self.front_vehicle):
                         gap = self.time_gap_error(2, self, self.front_vehicle)
-                        print(f"time gap to front vehicle: {gap}, current lane {self.lane_index}")
-                        self.distance = self.lane_distance_to(self.front_vehicle, self.lane)
+                        # print(f"time gap to front vehicle: {gap}, current lane {self.lane_index}")
                         
                         if(gap < 0):
                             self.my_lane = curr_lane_index[2] - 2
@@ -528,6 +530,8 @@ class DecisionMakingVehicle(MDPVehicle):
         elif(action == "RIGHTMOSTLANE"):
             lanes_count = len(self.road.network.lanes_list())
             curr_lane_index = self.lane_index
+            self.throttle = 0.0
+            self.phy_action = {"steering": 0.0, "acceleration": self.throttle}
             # if (self.my_lane == curr_lane_index[2] + 1):
 
             # print(f"curr lane index: {curr_lane_index[2]}, lanes count: {lanes_count-1}")
@@ -535,16 +539,10 @@ class DecisionMakingVehicle(MDPVehicle):
 
                 if(self.timer != 150):
                     super().act("IDLE")
-                    self.phy_action = {"steering": 0.0, "acceleration": 0.0}
                     self.timer += 1
                 else:
-                    phy_acceleration = 0.0
-                    self.phy_action = {"steering": 0.0, "acceleration": phy_acceleration}
                     super().act("LANE_RIGHT")
-                    self.timer = 0
-                
-            else:
-                self.phy_action = {"steering": 0.0, "acceleration": 0.0}                    
+                    self.timer = 0         
                     
                     # next_lane_index = (curr_lane_index[0], curr_lane_index[1], curr_lane_index[2] + 1)
                     # right_front_vehicle, right_rear_vehicle = self.road.neighbour_vehicles(self, next_lane_index)
