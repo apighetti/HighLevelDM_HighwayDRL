@@ -29,12 +29,12 @@ class DecisionMakingEnv(AbstractEnv):
                 "type": "DecisionMakingAction",
             },
             "lanes_count": 4,
-            "vehicles_count": 10,
+            "vehicles_count": 20,
             "controlled_vehicles": 1,
             "initial_lane_id": 3,
-            "duration": 30,  # [s]
+            "duration": 60,  # [s]
             "ego_spacing": 2,
-            "vehicles_density": 2,
+            "vehicles_density": 0.5,
             "collision_reward": -1,    # The reward received when colliding with a vehicle.
             "right_lane_reward": 0.3,  # The reward received when driving on the right-most lanes, linearly mapped to
                                        # zero for other lanes.
