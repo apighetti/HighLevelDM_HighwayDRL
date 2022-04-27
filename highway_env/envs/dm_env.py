@@ -28,20 +28,20 @@ class DecisionMakingEnv(AbstractEnv):
             "action": {
                 "type": "DecisionMakingAction",
             },
-            "lanes_count": 3,
-            "vehicles_count": 35,
+            "lanes_count": 4,
+            "vehicles_count": 10,
             "controlled_vehicles": 1,
-            "initial_lane_id": 2,
-            "duration": 20,  # [s]
+            "initial_lane_id": 3,
+            "duration": 30,  # [s]
             "ego_spacing": 2,
-            "vehicles_density": 1,
+            "vehicles_density": 2,
             "collision_reward": -1,    # The reward received when colliding with a vehicle.
-            "right_lane_reward": 0.1,  # The reward received when driving on the right-most lanes, linearly mapped to
+            "right_lane_reward": 0.3,  # The reward received when driving on the right-most lanes, linearly mapped to
                                        # zero for other lanes.
             "high_speed_reward": 0.4,  # The reward received when driving at full speed, linearly mapped to zero for
                                        # lower speeds according to config["reward_speed_range"].
-            "lane_change_reward": 0,   # The reward received at each lane change action.
-            "reward_speed_range": [20, 30],
+            "lane_change_reward": 0.2,   # The reward received at each lane change action.
+            "reward_speed_range": [25, 36],
             "offroad_terminal": False
         })
         return config
