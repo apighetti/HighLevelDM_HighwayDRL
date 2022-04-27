@@ -29,10 +29,10 @@ class DecisionMakingEnv(AbstractEnv):
                 "type": "DecisionMakingAction",
             },
             "lanes_count": 3,
-            "vehicles_count": 25,
+            "vehicles_count": 35,
             "controlled_vehicles": 1,
             "initial_lane_id": 4,
-            "duration": 40,  # [s]
+            "duration": 20,  # [s]
             "ego_spacing": 2,
             "vehicles_density": 1,
             "collision_reward": -1,    # The reward received when colliding with a vehicle.
