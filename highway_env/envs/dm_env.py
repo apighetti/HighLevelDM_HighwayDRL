@@ -31,16 +31,16 @@ class DecisionMakingEnv(AbstractEnv):
             "lanes_count": 3,
             "vehicles_count": 20,
             "controlled_vehicles": 1,
-            "initial_lane_id": 2,
+            "initial_lane_id": None,
             "duration": 60,  # [s]
             "ego_spacing": 2,
-            "vehicles_density": 0.5,
+            "vehicles_density": 0.6,
             "collision_reward": -1,    # The reward received when colliding with a vehicle.
-            "right_lane_reward": 0.003,  # The reward received when driving on the right-most lanes, linearly mapped to
+            "right_lane_reward": 0.3,  # The reward received when driving on the right-most lanes, linearly mapped to
                                        # zero for other lanes.
-            "high_speed_reward": 0.004,  # The reward received when driving at full speed, linearly mapped to zero for
+            "high_speed_reward": 0.2,  # The reward received when driving at full speed, linearly mapped to zero for
                                        # lower speeds according to config["reward_speed_range"].
-            "lane_change_reward": 0.002,   # The reward received at each lane change action.
+            "lane_change_reward": 0.2,   # The reward received at each lane change action.
             "reward_speed_range": [25, 36],
             "offroad_terminal": False
         })
