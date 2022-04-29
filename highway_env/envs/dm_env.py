@@ -31,16 +31,16 @@ class DecisionMakingEnv(AbstractEnv):
             "lanes_count": 3,
             "vehicles_count": 20,
             "controlled_vehicles": 1,
-            "initial_lane_id": 2,
-            "duration": 60,  # [s]
+            "initial_lane_id": None,
+            "duration": 120,  # [s]
             "ego_spacing": 2,
-            "vehicles_density": 0.5,
-            "collision_reward": -1,    # The reward received when colliding with a vehicle.
-            "right_lane_reward": 0.003,  # The reward received when driving on the right-most lanes, linearly mapped to
+            "vehicles_density": 0.6,
+            "collision_reward": -5,    # The reward received when colliding with a vehicle.
+            "right_lane_reward": 0.25,  # The reward received when driving on the right-most lanes, linearly mapped to
                                        # zero for other lanes.
-            "high_speed_reward": 0.004,  # The reward received when driving at full speed, linearly mapped to zero for
+            "high_speed_reward": 0.01,  # The reward received when driving at full speed, linearly mapped to zero for
                                        # lower speeds according to config["reward_speed_range"].
-            "lane_change_reward": 0.002,   # The reward received at each lane change action.
+            "lane_change_reward": -0.05,   # The reward received at each lane change action.
             "reward_speed_range": [25, 36],
             "offroad_terminal": False
         })
@@ -88,12 +88,17 @@ class DecisionMakingEnv(AbstractEnv):
             else self.vehicle.lane_index[2]
         # Use forward speed rather than speed, see https://github.com/eleurent/highway-env/issues/268
         forward_speed = self.vehicle.speed * np.cos(self.vehicle.heading)
+        action_reward = {0: 0,
+                         1: self.config["lane_change_reward"],
+                         2: self.config["lane_change_reward"]
+                         }
         scaled_speed = utils.lmap(forward_speed, self.config["reward_speed_range"], [0, 1])
         reward = \
             + self.config["collision_reward"] * self.vehicle.crashed \
             + self.config["right_lane_reward"] * lane / max(len(neighbours) - 1, 1) \
             + self.config["high_speed_reward"] * np.clip(scaled_speed, 0, 1)
-        reward = utils.lmap(reward,
+
+        reward = utils.lmap(action_reward[action] + reward,
                           [self.config["collision_reward"],
                            self.config["high_speed_reward"] + self.config["right_lane_reward"]],
                           [0, 1])
