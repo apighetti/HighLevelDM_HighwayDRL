@@ -41,7 +41,7 @@ class DecisionMakingEnv(AbstractEnv):
             "high_speed_reward": 0.01,  # The reward received when driving at full speed, linearly mapped to zero for
                                        # lower speeds according to config["reward_speed_range"].
             "lane_change_reward": -0.05,   # The reward received at each lane change action.
-            "reward_speed_range": [20, 36],
+            "reward_speed_range": [25, 36],
             "offroad_terminal": False
         })
         return config
