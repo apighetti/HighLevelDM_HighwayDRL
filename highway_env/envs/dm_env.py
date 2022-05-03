@@ -1,3 +1,4 @@
+from xmlrpc.client import Boolean
 import numpy as np
 from gym.envs.registration import register
 
@@ -35,9 +36,10 @@ class DecisionMakingEnv(AbstractEnv):
             "duration": 120,  # [s]
             "ego_spacing": 2,
             "vehicles_density": 0.6,
-            "collision_reward": -5,    # The reward received when colliding with a vehicle.
-            "right_lane_reward": 0.5,  # The reward received when driving on the right-most lanes, linearly mapped to
+            "collision_reward": -1,    # The reward received when colliding with a vehicle.
+            "right_lane_reward": 0.2,  # The reward received when driving on the right-most lanes, linearly mapped to
                                        # zero for other lanes.
+            "not_in_rightl_reward": -0.25,
             "high_speed_reward": 0.01,  # The reward received when driving at full speed, linearly mapped to zero for
                                        # lower speeds according to config["reward_speed_range"].
             "lane_change_reward": -0.005,   # The reward received at each lane change action.
@@ -77,6 +79,50 @@ class DecisionMakingEnv(AbstractEnv):
                 vehicle.randomize_behavior()
                 self.road.vehicles.append(vehicle)
 
+
+    def _is_lane_empty(self, lane_index, right = True) -> bool:
+        if (right):
+
+            front_right_vehicle, rear_right_vehicle = self.road.neighbour_vehicles(self.vehicle, lane_index)
+            
+            if rear_right_vehicle and not front_right_vehicle:
+                rear_gap = self.vehicle.time_gap_error(2, rear_right_vehicle, self.vehicle)
+                if rear_gap > 0:
+                    return True
+            elif front_right_vehicle and not rear_right_vehicle:
+                front_gap = self.vehicle.time_gap_error(2, self.vehicle, front_right_vehicle)
+                if front_gap > 0:
+                    return True
+            
+            elif front_right_vehicle and rear_right_vehicle:
+                rear_gap = self.vehicle.time_gap_error(2, rear_right_vehicle, self.vehicle)  
+                front_gap = self.vehicle.time_gap_error(2, self.vehicle, front_right_vehicle)
+                if front_gap > 0 and rear_gap > 0:
+                    return True
+        else:
+
+            front_left_vehicle, rear_left_vehicle = self.road.neighbour_vehicles(self.vehicle, lane_index)
+
+            if rear_left_vehicle and not front_left_vehicle:
+                rear_gap = self.vehicle.time_gap_error(2, rear_left_vehicle, self.vehicle)
+                if rear_gap > 0:
+                    return True  
+            
+            elif front_left_vehicle and not rear_left_vehicle:
+                front_gap = self.vehicle.time_gap_error(2, self.vehicle, front_left_vehicle)
+                if front_gap > 0:
+                    return True
+            
+            elif front_left_vehicle and rear_left_vehicle:
+                rear_gap = self.vehicle.time_gap_error(2, rear_left_vehicle, self.vehicle)  
+                front_gap = self.vehicle.time_gap_error(2, self.vehicle, front_left_vehicle)
+                if front_gap > 0 and rear_gap > 0:
+                    return True
+
+        return False
+
+
+
     def _reward(self, action: Action) -> float:
         """
         The reward is defined to foster driving at high speed, on the rightmost lanes, and to avoid collisions.
@@ -86,19 +132,21 @@ class DecisionMakingEnv(AbstractEnv):
         neighbours = self.road.network.all_side_lanes(self.vehicle.lane_index)
         lane = self.vehicle.target_lane_index[2] if isinstance(self.vehicle, ControlledVehicle) \
             else self.vehicle.lane_index[2]
+
+        not_in_rl = 1 if self._is_lane_empty(self.vehicle.lane_index[2] + 1) \
+                    and self.vehicle.lane_index[2] + 1 != self.vehicle.target_lane_index[2] else 0
+
         # Use forward speed rather than speed, see https://github.com/eleurent/highway-env/issues/268
         forward_speed = self.vehicle.speed * np.cos(self.vehicle.heading)
-        action_reward = {0: 0,
-                         1: self.config["lane_change_reward"],
-                         2: self.config["lane_change_reward"]
-                         }
+
         scaled_speed = utils.lmap(forward_speed, self.config["reward_speed_range"], [0, 1])
         reward = \
             + self.config["collision_reward"] * self.vehicle.crashed \
+            + self.config["not_in_rightl_reward"] * not_in_rl \
             + self.config["right_lane_reward"] * lane / max(len(neighbours) - 1, 1) \
             + self.config["high_speed_reward"] * np.clip(scaled_speed, 0, 1)
 
-        reward = utils.lmap(action_reward[action] + reward,
+        reward = utils.lmap(reward,
                           [self.config["collision_reward"],
                            self.config["high_speed_reward"] + self.config["right_lane_reward"]],
                           [0, 1])

@@ -441,7 +441,6 @@ class DecisionMakingVehicle(MDPVehicle):
         return (self.speed * 3.6 / 10)**2
 
     def time_gap_error(self, target_time_gap: int, vehicleA: Vehicle, vehicleB: Vehicle) -> float:
-
         clearance = vehicleB.position[0] - vehicleA.position[0] #[m]
         time_gap = clearance / (vehicleA.speed + 0.0001) #[s]
         gap = time_gap - target_time_gap
