@@ -38,13 +38,13 @@ class DecisionMakingEnv(AbstractEnv):
             "ego_spacing": 2,
             "vehicles_density": 0.6,
             "collision_reward": -1,    # The reward received when colliding with a vehicle.
-            "right_lane_reward": 0.2,  # The reward received when driving on the right-most lanes, linearly mapped to
+            "right_lane_reward": 0.4,  # The reward received when driving on the right-most lanes, linearly mapped to
                                        # zero for other lanes.
-            "not_in_rightl_reward": -0.45,
-            "high_speed_reward": 0.01,  # The reward received when driving at full speed, linearly mapped to zero for
+            "distance_to_tv_reward": -0.2,
+            # "high_speed_reward": 0.01,  # The reward received when driving at full speed, linearly mapped to zero for
                                        # lower speeds according to config["reward_speed_range"].
-            "lane_change_reward": -0.005,   # The reward received at each lane change action.
-            "reward_speed_range": [25, 36],
+            # "lane_change_reward": -0.005,   # The reward received at each lane change action.
+            # "reward_speed_range": [25, 36],
             "offroad_terminal": False
         })
         return config
@@ -67,7 +67,7 @@ class DecisionMakingEnv(AbstractEnv):
         for others in other_per_controlled:
             vehicle = Vehicle.create_random(
                 self.road,
-                speed=25,
+                speed=20,
                 lane_id=self.config["initial_lane_id"],
                 spacing=self.config["ego_spacing"]
             )
@@ -81,54 +81,54 @@ class DecisionMakingEnv(AbstractEnv):
                 self.road.vehicles.append(vehicle)
 
 
-    def _is_lane_empty(self, lane_index, right = True) -> bool:
-        if (right):
-            right_lane_index = (lane_index[0], lane_index[1], lane_index[2]+1)
-            front_right_vehicle, rear_right_vehicle = self.road.neighbour_vehicles(self.vehicle, right_lane_index)
+    # def _is_lane_empty(self, lane_index, right = True) -> bool:
+    #     if (right):
+    #         right_lane_index = (lane_index[0], lane_index[1], lane_index[2]+1)
+    #         front_right_vehicle, rear_right_vehicle = self.road.neighbour_vehicles(self.vehicle, right_lane_index)
             
-            if rear_right_vehicle and not front_right_vehicle:
-                rear_gap = self.vehicle.time_gap_error(2, rear_right_vehicle, self.vehicle)
-                if rear_gap > 0:
-                    # print("only Rear Right Vehicle: " + str(rear_right_vehicle)+"\n")
-                    return True
-            elif front_right_vehicle and not rear_right_vehicle:
-                front_gap = self.vehicle.time_gap_error(2, self.vehicle, front_right_vehicle)
-                if front_gap > 0:
-                    # print("only Front Right Vehicle: " + str(front_right_vehicle)+"\n")
-                    return True
+    #         if rear_right_vehicle and not front_right_vehicle:
+    #             rear_gap = self.vehicle.time_gap_error(2, rear_right_vehicle, self.vehicle)
+    #             if rear_gap > 0:
+    #                 # print("only Rear Right Vehicle: " + str(rear_right_vehicle)+"\n")
+    #                 return True
+    #         elif front_right_vehicle and not rear_right_vehicle:
+    #             front_gap = self.vehicle.time_gap_error(2, self.vehicle, front_right_vehicle)
+    #             if front_gap > 0:
+    #                 # print("only Front Right Vehicle: " + str(front_right_vehicle)+"\n")
+    #                 return True
             
-            elif front_right_vehicle and rear_right_vehicle:
-                rear_gap = self.vehicle.time_gap_error(2, rear_right_vehicle, self.vehicle)  
-                front_gap = self.vehicle.time_gap_error(2, self.vehicle, front_right_vehicle)
-                if front_gap > 0 and rear_gap > 0:
-                    # print("Front Right Vehicle: " + str(front_right_vehicle)+"\n")
-                    # print("Rear Right Vehicle: " + str(rear_right_vehicle)+"\n")
-                    return True
-        else:
-            left_lane_index = (lane_index[0], lane_index[1], lane_index[2]-1)
-            front_left_vehicle, rear_left_vehicle = self.road.neighbour_vehicles(self.vehicle, left_lane_index)
+    #         elif front_right_vehicle and rear_right_vehicle:
+    #             rear_gap = self.vehicle.time_gap_error(2, rear_right_vehicle, self.vehicle)  
+    #             front_gap = self.vehicle.time_gap_error(2, self.vehicle, front_right_vehicle)
+    #             if front_gap > 0 and rear_gap > 0:
+    #                 # print("Front Right Vehicle: " + str(front_right_vehicle)+"\n")
+    #                 # print("Rear Right Vehicle: " + str(rear_right_vehicle)+"\n")
+    #                 return True
+    #     else:
+    #         left_lane_index = (lane_index[0], lane_index[1], lane_index[2]-1)
+    #         front_left_vehicle, rear_left_vehicle = self.road.neighbour_vehicles(self.vehicle, left_lane_index)
 
-            if rear_left_vehicle and not front_left_vehicle:
-                rear_gap = self.vehicle.time_gap_error(2, rear_left_vehicle, self.vehicle)
-                if rear_gap > 0:
-                    # print("only Rear Left Vehicle: " + str(rear_left_vehicle)+"\n")
-                    return True  
+    #         if rear_left_vehicle and not front_left_vehicle:
+    #             rear_gap = self.vehicle.time_gap_error(2, rear_left_vehicle, self.vehicle)
+    #             if rear_gap > 0:
+    #                 # print("only Rear Left Vehicle: " + str(rear_left_vehicle)+"\n")
+    #                 return True  
             
-            elif front_left_vehicle and not rear_left_vehicle:
-                front_gap = self.vehicle.time_gap_error(2, self.vehicle, front_left_vehicle)
-                if front_gap > 0:
-                    # print("only Rear Left Vehicle: " + str(rear_left_vehicle)+"\n")
-                    return True
+    #         elif front_left_vehicle and not rear_left_vehicle:
+    #             front_gap = self.vehicle.time_gap_error(2, self.vehicle, front_left_vehicle)
+    #             if front_gap > 0:
+    #                 # print("only Rear Left Vehicle: " + str(rear_left_vehicle)+"\n")
+    #                 return True
             
-            elif front_left_vehicle and rear_left_vehicle:
-                rear_gap = self.vehicle.time_gap_error(2, rear_left_vehicle, self.vehicle)  
-                front_gap = self.vehicle.time_gap_error(2, self.vehicle, front_left_vehicle)
-                if front_gap > 0 and rear_gap > 0:
-                    # print("Rear Left Vehicle: " + str(rear_left_vehicle)+"\n")
-                    # print("Front Left Vehicle: " + str(front_left_vehicle)+"\n")
-                    return True
-        # print("no negative reward")
-        return False
+    #         elif front_left_vehicle and rear_left_vehicle:
+    #             rear_gap = self.vehicle.time_gap_error(2, rear_left_vehicle, self.vehicle)  
+    #             front_gap = self.vehicle.time_gap_error(2, self.vehicle, front_left_vehicle)
+    #             if front_gap > 0 and rear_gap > 0:
+    #                 # print("Rear Left Vehicle: " + str(rear_left_vehicle)+"\n")
+    #                 # print("Front Left Vehicle: " + str(front_left_vehicle)+"\n")
+    #                 return True
+    #     # print("no negative reward")
+    #     return False
 
 
 
@@ -141,29 +141,37 @@ class DecisionMakingEnv(AbstractEnv):
         neighbours = self.road.network.all_side_lanes(self.vehicle.lane_index)
         lane = self.vehicle.target_lane_index[2] if isinstance(self.vehicle, ControlledVehicle) \
             else self.vehicle.lane_index[2]
-        lanes_count = len(self.road.network.lanes_list())
+        
 
-        if(self.vehicle.lane_index[2] != lanes_count-1):
-            not_in_rl = 1 if self._is_lane_empty(self.vehicle.lane_index) \
-                        and self.vehicle.lane_index[2] + 1 != self.vehicle.target_lane_index[2] else 0
-        else:
-            not_in_rl = 0
+        # lanes_count = len(self.road.network.lanes_list())
+
+        # if(self.vehicle.lane_index[2] != lanes_count-1):
+        #     not_in_rl = 1 if self._is_lane_empty(self.vehicle.lane_index) \
+        #                 and self.vehicle.lane_index[2] + 1 != self.vehicle.target_lane_index[2] else 0
+        # else:
+        #     not_in_rl = 0
+
+        speed_diff = utils.lmap((36 - self.vehicle.speed), [0,36] , [0, 1])
 
         # Use forward speed rather than speed, see https://github.com/eleurent/highway-env/issues/268
         forward_speed = self.vehicle.speed * np.cos(self.vehicle.heading)
+        # scaled_speed = utils.lmap(forward_speed, self.config["reward_speed_range"], [0, 1])
 
-        scaled_speed = utils.lmap(forward_speed, self.config["reward_speed_range"], [0, 1])
-        reward = \
-            + self.config["collision_reward"] * self.vehicle.crashed \
-            + self.config["not_in_rightl_reward"] * not_in_rl \
-            + self.config["right_lane_reward"] * lane / max(len(neighbours) - 1, 1) \
-            + self.config["high_speed_reward"] * np.clip(scaled_speed, 0, 1)
+        reward = self.config["distance_to_tv_reward"] * speed_diff \
+            + self.config["right_lane_reward"] * lane / max(len(neighbours) - 1, 1)
+            # + self.config["high_speed_reward"] * np.clip(scaled_speed, 0, 1)
 
         reward = utils.lmap(reward,
-                          [self.config["collision_reward"] + self.config["high_speed_reward"] + self.config["not_in_rightl_reward"],
+                          [self.config["distance_to_tv_reward"],
                            self.config["right_lane_reward"]],
                           [0, 1])
+
+        # reward += self.config["collision_reward"] * self.vehicle.crashed * 5
         reward = 0 if not self.vehicle.on_road else reward
+        # distance_ttv = self.config["distance_to_tv_reward"] * speed_diff
+        # r_lane_reward = self.config["right_lane_reward"] * lane / max(len(neighbours) - 1, 1)
+        # print(f"\nDistance to tVel reward: {distance_ttv}, \
+        #     \nRight lane reward: {r_lane_reward}\nOverall reward: {reward}")
         return reward
 
     def _is_terminal(self) -> bool:

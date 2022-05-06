@@ -383,7 +383,6 @@ class DecisionMakingVehicle(MDPVehicle):
 
         :param action: a high-level action
         """
-        
         if action == "ACC":
             if(self.rml_flag):
                 self.rml_flag = False
@@ -393,9 +392,6 @@ class DecisionMakingVehicle(MDPVehicle):
             if(not self.acc_flag):
                 self.acc_flag = True
                 # print("ACC ON")
-            else:
-                self.acc_flag = False
-                # print("ACC OFF")
                         
         elif action == "OVERTAKE":
             if(self.acc_flag):
@@ -407,9 +403,6 @@ class DecisionMakingVehicle(MDPVehicle):
                 self.overtake_flag = True
                 self.my_lane = self.lane_index[2] - 1
                 # print("OVERTAKE ON")
-            else:
-                self.overtake_flag = False
-                # print("OVERTAKE OFF")
 
         elif action == "RIGHTMOSTLANE":
             if(self.acc_flag):
@@ -419,13 +412,10 @@ class DecisionMakingVehicle(MDPVehicle):
 
             if(not self.rml_flag):
                 self.rml_flag = True
-                self.timer = 0
+                self.timer = -1
                 self.phy_action = None
                 # self.my_lane = self.lane_index[2] + 1
                 # print("RIGHTMOSTLANE ON")
-            else:
-                self.rml_flag = False
-                # print("RIGHTMOSTLANE OFF")
         else:
             super().act(action)
             return
@@ -537,8 +527,9 @@ class DecisionMakingVehicle(MDPVehicle):
 
             # print(f"curr lane index: {curr_lane_index[2]}, lanes count: {lanes_count-1}")
             if(curr_lane_index[2] != lanes_count-1):
-
-                if(self.timer != 150):
+                if(self.timer == -1):
+                    super().act("LANE_RIGHT")
+                if(self.timer != 60):
                     super().act("IDLE")
                     self.timer += 1
                 else:
