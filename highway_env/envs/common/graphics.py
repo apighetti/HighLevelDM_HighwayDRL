@@ -253,7 +253,6 @@ class ObservationGraphics(object):
                 #         f.write(f"{str(obs.observer_vehicle.speed)},{str(obs.observer_vehicle.front_vehicle.speed)},{str(obs.observer_vehicle.throttle)}\n")
                 # except KeyboardInterrupt:
                 #     f.close()
-                
                 timegap_display = myFont.render("Time gap: " + \
                     str(round(clearance/(obs.observer_vehicle.speed) - obs.observer_vehicle.TTG,2)) + " s" , 1 ,(255, 255, 255))
                 sim_surface.blit(fvDisplay, (20,30))

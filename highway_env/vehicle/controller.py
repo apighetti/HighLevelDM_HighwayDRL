@@ -410,7 +410,7 @@ class DecisionMakingVehicle(MDPVehicle):
         self.prev_velocity = prev_velocity
         self.my_lane = my_lane
         self.pid_brake = PID(0.6, 0, 0.9)
-        self.pid_acc = PID(0.2, 0, 0.8)
+        self.pid_acc = PID(0.2, 0, 0) # 0.8
 
     def act(self, action: Union[dict, str] = None) -> None:
         
@@ -499,7 +499,6 @@ class DecisionMakingVehicle(MDPVehicle):
             # return 0.9 * target_time_gap + 0.005*(self.speed - self.prev_speed)/0.05 if target_time_gap < 0 else target_time_gap * 0.7 + 0.005*(self.speed - self.prev_speed)/0.05
         else:
             # throttle = self.speed_control(target_speed)
-            # print("culo")
             throttle = self.pid_acc.get_value(self.speed, target_speed)
             return throttle
         
