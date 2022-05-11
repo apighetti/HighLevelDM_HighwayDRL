@@ -11,7 +11,8 @@ from highway_env.vehicle.controller import ControlledVehicle
 from highway_env.vehicle.kinematics import Vehicle
 from highway_env.vehicle.objects import LaneIndex
 
-
+# START_SEC = 120
+COL_REWARDS = [-1, -1.3, -1.6, -1.9]
 class DecisionMakingEnv(AbstractEnv):
     """
     A highway driving environment.
@@ -36,15 +37,15 @@ class DecisionMakingEnv(AbstractEnv):
             "initial_lane_id": None,
             "duration": 120,  # [s]
             "ego_spacing": 2,
-            "vehicles_density": 1,
+            "vehicles_density": 0.6,
             "collision_reward": -1,    # The reward received when colliding with a vehicle.
             "not_in_right_lane_reward": -0.004,  # The reward received when driving on the right-most lanes, linearly mapped to
                                        # zero for other lanes.
-            "distance_to_tv_reward": -0.003,
-            # "high_speed_reward": 0.01,  # The reward received when driving at full speed, linearly mapped to zero for
+            "distance_to_tv_reward": -0.03,
+            "high_speed_reward": 0.0001,  # The reward received when driving at full speed, linearly mapped to zero for
                                        # lower speeds according to config["reward_speed_range"].
             # "lane_change_reward": -0.005,   # The reward received at each lane change action.
-            # "reward_speed_range": [25, 36],
+            "reward_speed_range": [30, 36],
             "offroad_terminal": False
         })
         return config
@@ -154,13 +155,13 @@ class DecisionMakingEnv(AbstractEnv):
         speed_diff = utils.lmap((36 - self.vehicle.speed), [0,36] , [0, 1])
 
         # Use forward speed rather than speed, see https://github.com/eleurent/highway-env/issues/268
-        # forward_speed = self.vehicle.speed * np.cos(self.vehicle.heading)
-        # scaled_speed = utils.lmap(forward_speed, self.config["reward_speed_range"], [0, 1])
+        forward_speed = self.vehicle.speed * np.cos(self.vehicle.heading)
+        scaled_speed = utils.lmap(forward_speed, self.config["reward_speed_range"], [0, 1])
 
         reward = self.config["collision_reward"] * self.vehicle.crashed \
             + self.config["distance_to_tv_reward"] * speed_diff \
-            + self.config["not_in_right_lane_reward"] * (1 - (lane / max(len(neighbours) - 1, 1)))
-            # + self.config["high_speed_reward"] * np.clip(scaled_speed, 0, 1)
+            + self.config["not_in_right_lane_reward"] * (1 - (lane / max(len(neighbours) - 1, 1))) \
+            + self.config["high_speed_reward"] * np.clip(scaled_speed, 0, 1)
 
         # reward = utils.lmap(reward,
         #                   [self.config["distance_to_tv_reward"],
@@ -176,6 +177,10 @@ class DecisionMakingEnv(AbstractEnv):
 
     def _is_terminal(self) -> bool:
         """The episode is over if the ego vehicle crashed or the time is out."""
+                
+        # self.config['duration'] = START_SEC + int(self.steps/1000)
+        collision_index = int(utils.lmap(abs(self.steps - self.config['duration']), [0,120], [3,0]))
+        self.config['collision'] = COL_REWARDS[collision_index]
         return self.vehicle.crashed or \
             self.steps >= self.config["duration"] or \
             (self.config["offroad_terminal"] and not self.vehicle.on_road)
