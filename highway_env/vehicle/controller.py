@@ -11,6 +11,7 @@ from highway_env import utils
 from highway_env.road.road import Road, LaneIndex, Route
 from highway_env.utils import Vector
 from highway_env.vehicle.kinematics import Vehicle
+import time
 
 
 class ControlledVehicle(Vehicle):
@@ -31,7 +32,7 @@ class ControlledVehicle(Vehicle):
 
     TAU_PURSUIT = 0.5 * TAU_HEADING  # [s]
     # KP_A = 1 / TAU_ACC - 0.
-    KP_A = 0.8
+    KP_A = 0.5
     KP_HEADING = 1 / TAU_HEADING
     KP_LATERAL = 1 / TAU_LATERAL  # [1/s]
     MAX_STEERING_ANGLE = np.pi / 6  # [rad]
@@ -344,7 +345,7 @@ class PID:
         self.K_D = K_D
         self.prev_error = 0
         self.integral_error = 0
-        self.dt= 0.05
+        self.last_time = time.perf_counter()
         
     def clear(self):
         self.prev_error = 0
@@ -352,13 +353,15 @@ class PID:
         
     def get_value(self, value, target_value):
         error = target_value - value
-        d_error = (error - self.prev_error)/self.dt
-        i_error= self.integral_error + error*self.dt
+        t_m = time.perf_counter()
+        d_error = (error - self.prev_error)/(t_m-self.last_time)
+        i_error= self.integral_error + error*(t_m-self.last_time)
         t = self.K_P * error + self.K_D * d_error + self.K_I * i_error
         self.prev_error = error 
         self.integral_error = i_error
+        self.last_time = t_m
+        print(f"value: {value}, target value: {target_value}, throttle: {t}")
         
-        print(value, target_value, t)
         return t
     
 
@@ -368,7 +371,8 @@ class DecisionMakingVehicle(MDPVehicle):
     """An MDP vehicle which performs high-level decision making actions."""
 
     MAX_SPEED = 36 # m/s
-
+    TTG = 2
+    
     def __init__(self,
                  road: Road,
                  position: List[float],
@@ -405,8 +409,8 @@ class DecisionMakingVehicle(MDPVehicle):
         self.velocity_integral = velocity_integral
         self.prev_velocity = prev_velocity
         self.my_lane = my_lane
-        self.pid_brake = PID(2.2, 0, 1.03)
-        self.pid_acc = PID(0.8, 0, 1.05)
+        self.pid_brake = PID(0.6, 0, 0.9)
+        self.pid_acc = PID(0.2, 0, 0.8)
 
     def act(self, action: Union[dict, str] = None) -> None:
         
@@ -473,24 +477,31 @@ class DecisionMakingVehicle(MDPVehicle):
         clearance = vehicleB.position[0] - vehicleA.position[0] #[m]
         time_gap = clearance / (vehicleA.speed + 0.0001) #[s]
         gap = time_gap - target_time_gap
+        print(f"\ngap: {gap}")
 
         return gap
 
     def physical_validity_modifier(self, target_speed = None , target_time_gap = None):
         # print(target_time_gap)
         if(target_time_gap):
-            target_time = 1
+            
             # print(self.pid_brake.get_value(self.time_gap_error(2, self, self.front_vehicle), target_time_gap),\
             #     self.pid_acc.get_value(self.time_gap_error(2, self, self.front_vehicle), target_time_gap))
             
-            return self.pid_brake.get_value(-self.time_gap_error(1, self, self.front_vehicle), -target_time) if target_time_gap < 0 \
-                else self.pid_acc.get_value(-self.time_gap_error(1, self, self.front_vehicle), -target_time)
+            if abs(target_time_gap) < 0.1:
+                return 0
+
+            if target_time_gap < 0:
+                return -self.pid_brake.get_value(target_time_gap, self.TTG)
+
+            else :
+                return -self.pid_acc.get_value(target_time_gap, self.TTG)
             # return 0.9 * target_time_gap + 0.005*(self.speed - self.prev_speed)/0.05 if target_time_gap < 0 else target_time_gap * 0.7 + 0.005*(self.speed - self.prev_speed)/0.05
         else:
             # throttle = self.speed_control(target_speed)
             # print("culo")
             throttle = self.pid_acc.get_value(self.speed, target_speed)
-            return throttle if throttle < 0 else throttle * 0.7
+            return throttle
         
     def tactical_dm(self, action: Union[dict, str] = None) -> None:
         
@@ -503,15 +514,14 @@ class DecisionMakingVehicle(MDPVehicle):
             print(self.front_vehicle)
 
             if(self.front_vehicle):
-                gap = self.time_gap_error(2, self, self.front_vehicle)
-                d_speed = self.front_vehicle.speed + gap * 1
+                gap = self.time_gap_error(self.TTG, self, self.front_vehicle)
+                d_speed = self.front_vehicle.speed
                 self.distance = self.lane_distance_to(self.front_vehicle, self.lane)
 
                 if(d_speed > self.MAX_SPEED):
                     phy_acceleration = self.physical_validity_modifier(target_speed=self.MAX_SPEED)
                 else:
                     phy_acceleration = self.physical_validity_modifier(target_time_gap=gap)
-
 
             else:
                 phy_acceleration = self.physical_validity_modifier(target_speed=self.MAX_SPEED)
@@ -520,10 +530,10 @@ class DecisionMakingVehicle(MDPVehicle):
             phy_steering = 0.0
             self.phy_action = {"steering": phy_steering, "acceleration": phy_acceleration}
             
-            f = open(r'C:\Users\luka-\OneDrive\Documenti\Università\Laurea Magistrale\Final Thesis\HighwayDRL\highway_env\ACC_data.csv', 'a')
+            f = open(r'/Users/fornerispighetti/HighwayDRL/highway_env/ACC_data.csv', 'a')
             f.write(str(self.speed) + "," + str(self.front_vehicle.speed) + "," \
                 + str(self.phy_action['acceleration']) + "," \
-                + str(self.front_vehicle.position[0] - self.position[0]) + "," + str(gap) + "\n")
+                + str(self.front_vehicle.position[0] - self.position[0]) + "," + str(gap) + "," + str(time.perf_counter()) +"\n")
             
 
         elif(action == "OVERTAKE"):
