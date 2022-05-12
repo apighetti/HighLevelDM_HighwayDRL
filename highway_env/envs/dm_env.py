@@ -12,7 +12,7 @@ from highway_env.vehicle.kinematics import Vehicle
 from highway_env.vehicle.objects import LaneIndex
 
 # START_SEC = 120
-COL_REWARDS = [-1, -1.3, -1.6, -1.9]
+COL_REWARDS = [-0.5, -0.8, -1.1, -1.4]
 class DecisionMakingEnv(AbstractEnv):
     """
     A highway driving environment.
@@ -72,7 +72,9 @@ class DecisionMakingEnv(AbstractEnv):
                 lane_id=self.config["initial_lane_id"],
                 spacing=self.config["ego_spacing"]
             )
+
             vehicle = self.action_type.vehicle_class(self.road, vehicle.position, vehicle.heading, vehicle.speed)
+
             self.controlled_vehicles.append(vehicle)
             self.road.vehicles.append(vehicle)
 

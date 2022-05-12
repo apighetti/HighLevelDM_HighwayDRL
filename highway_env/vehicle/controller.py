@@ -215,7 +215,6 @@ class ControlledVehicle(Vehicle):
         return tuple(zip(*[self.road.network.position_heading_along_route(route, coordinates[0] + self.speed * t, 0)
                      for t in times]))
 
-
 class MDPVehicle(ControlledVehicle):
 
     """A controlled vehicle with a specified discrete range of allowed target speeds."""
@@ -332,7 +331,6 @@ class MDPVehicle(ControlledVehicle):
                     states.append(copy.deepcopy(v))
         return states
 
-
 class PID:
     
     def __init__(self,
@@ -360,7 +358,7 @@ class PID:
         self.prev_error = error 
         self.integral_error = i_error
         self.last_time = t_m
-        print(f"value: {value}, target value: {target_value}, throttle: {t}")
+        # print(f"value: {value}, target value: {target_value}, throttle: {t}")
         
         return t
     
@@ -372,12 +370,11 @@ class DecisionMakingVehicle(MDPVehicle):
 
     MAX_SPEED = 36 # m/s
     TTG = 2
+    old_action = ""
     
     def __init__(self,
                  road: Road,
                  position: List[float],
-                 pid_brake : PID,
-                 pid_acc : PID,
                  heading: float = 0,
                  speed: float = 0,
                  target_lane_index: Optional[LaneIndex] = None,
@@ -423,20 +420,24 @@ class DecisionMakingVehicle(MDPVehicle):
         :param action: a high-level action
         """
         if action == "ACC":
-            if(self.rml_flag):
+            # print("\nACC")
+            if(self.rml_flag or self.overtake_flag):
                 self.rml_flag = False
-            elif(self.overtake_flag):
                 self.overtake_flag = False
+                self.pid_acc.clear()
+                self.pid_brake.clear()
 
             if(not self.acc_flag):
                 self.acc_flag = True
                 # print("ACC ON")
                         
         elif action == "OVERTAKE":
-            if(self.acc_flag):
+            # print("\nOVRTK")
+            if(self.acc_flag or self.rml_flag):
                 self.acc_flag = False
-            elif(self.rml_flag):
                 self.rml_flag = False
+                self.pid_acc.clear()
+                self.pid_brake.clear()
 
             if(not self.overtake_flag):
                 self.overtake_flag = True
@@ -444,10 +445,12 @@ class DecisionMakingVehicle(MDPVehicle):
                 # print("OVERTAKE ON")
 
         elif action == "RIGHTMOSTLANE":
-            if(self.acc_flag):
+            # print("\nRML")
+            if(self.acc_flag or self.overtake_flag):
                 self.acc_flag = False
-            elif(self.overtake_flag):
                 self.overtake_flag = False
+                self.pid_acc.clear()
+                self.pid_brake.clear()
 
             if(not self.rml_flag):
                 self.rml_flag = True
@@ -477,7 +480,7 @@ class DecisionMakingVehicle(MDPVehicle):
         clearance = vehicleB.position[0] - vehicleA.position[0] #[m]
         time_gap = clearance / (vehicleA.speed + 0.0001) #[s]
         gap = time_gap - target_time_gap
-        print(f"\ngap: {gap}")
+        # print(f"\ngap: {gap}")
 
         return gap
 
@@ -510,7 +513,7 @@ class DecisionMakingVehicle(MDPVehicle):
             
             '''Adaptive Cruise Control. The ego vehicle keeps the time gap from the front vehicle '''
 
-            print(self.front_vehicle)
+            # print(self.front_vehicle)
 
             if(self.front_vehicle):
                 gap = self.time_gap_error(self.TTG, self, self.front_vehicle)
@@ -529,10 +532,10 @@ class DecisionMakingVehicle(MDPVehicle):
             phy_steering = 0.0
             self.phy_action = {"steering": phy_steering, "acceleration": phy_acceleration}
             
-            f = open(r'/Users/fornerispighetti/HighwayDRL/highway_env/ACC_data.csv', 'a')
-            f.write(str(self.speed) + "," + str(self.front_vehicle.speed) + "," \
-                + str(self.phy_action['acceleration']) + "," \
-                + str(self.front_vehicle.position[0] - self.position[0]) + "," + str(gap) + "," + str(time.perf_counter()) +"\n")
+            # f = open(r'/Users/fornerispighetti/HighwayDRL/highway_env/ACC_data.csv', 'a')
+            # f.write(str(self.speed) + "," + str(self.front_vehicle.speed) + "," \
+            #     + str(self.phy_action['acceleration']) + "," \
+            #     + str(self.front_vehicle.position[0] - self.position[0]) + "," + str(gap) + "," + str(time.perf_counter()) +"\n")
             
 
         elif(action == "OVERTAKE"):
