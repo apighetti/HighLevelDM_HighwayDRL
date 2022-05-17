@@ -1,3 +1,4 @@
+from distutils.command.config import config
 from xmlrpc.client import Boolean
 import numpy as np
 from gym.envs.registration import register
@@ -32,12 +33,12 @@ class DecisionMakingEnv(AbstractEnv):
                 "type": "DecisionMakingAction",
             },
             "lanes_count": 3,
-            "vehicles_count": 35,
+            "vehicles_count": 25,
             "controlled_vehicles": 1,
             "initial_lane_id": None,
-            "duration": 120,  # [s]
+            "duration": 60,  # [s]
             "ego_spacing": 1,
-            "vehicles_density": 0.6,
+            "vehicles_density": 0.7,
             "collision_reward": -3,              # The reward received when colliding with a vehicle.
             "not_in_right_lane_reward": -0.004,  # The reward received when driving on the right-most lanes, linearly mapped to
                                                  # zero for other lanes.
@@ -161,9 +162,9 @@ class DecisionMakingEnv(AbstractEnv):
 
         speed_diff = utils.lmap((36 - self.vehicle.speed), [0,36] , [0,1])
 
-        duration_diff = utils.lmap((120 - self.steps), [120,0], [0,1])
+        duration_diff = utils.lmap((self.config['duration'] - self.steps), [self.config['duration'],0], [0,1])
 
-        collision_index = int(utils.lmap(abs(self.steps - self.config['duration']), [0,120], [3,0]))
+        collision_index = int(utils.lmap(abs(self.steps - self.config['duration']), [0,self.config['duration']], [3,0]))
 
         # Use forward speed rather than speed, see https://github.com/eleurent/highway-env/issues/268
         # forward_speed = self.vehicle.speed * np.cos(self.vehicle.heading)
