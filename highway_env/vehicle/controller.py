@@ -372,7 +372,7 @@ class DecisionMakingVehicle(MDPVehicle):
     """An MDP vehicle which performs high-level decision making actions."""
 
     MAX_SPEED = 36 # m/s
-    TTG = 2
+    TTG = 1
     old_action = ""
     
     def __init__(self,
@@ -413,7 +413,7 @@ class DecisionMakingVehicle(MDPVehicle):
         self.last_throttle = last_throttle
         self.pid_brake = PID(0.65, 0, 0.9)
         self.pid_acc = PID(0.3, 0, 0.2) # 0.8
-        self.pid_overtake = PID(0.3, 0, 0)
+        self.pid_overtake = PID(0.05, 0, 0)
 
     def act(self, action: Union[dict, str] = None) -> None:
         
@@ -531,7 +531,7 @@ class DecisionMakingVehicle(MDPVehicle):
             # print(self.pid_brake.get_value(self.time_gap_error(2, self, self.front_vehicle), target_time_gap),\
             #     self.pid_acc.get_value(self.time_gap_error(2, self, self.front_vehicle), target_time_gap))
             
-            if abs(target_time_gap) < 0.1:
+            if abs(target_time_gap) < 0.2:
                 return 0
 
             if target_time_gap < 0:
@@ -542,16 +542,15 @@ class DecisionMakingVehicle(MDPVehicle):
             # return 0.9 * target_time_gap + 0.005*(self.speed - self.prev_speed)/0.05 if target_time_gap < 0 else target_time_gap * 0.7 + 0.005*(self.speed - self.prev_speed)/0.05
         else:
             # throttle = self.speed_control(target_speed)
-            throttle = self.pid_overtake.get_value(self.speed, target_speed) if is_overtaking \
-                else self.pid_acc.get_value(self.speed, target_speed)
+            throttle = self.pid_overtake.get_value(self.speed, target_speed) 
+            #if is_overtaking \
+             #   else self.pid_acc.get_value(self.speed, target_speed)
 
         return self.throttle_map(throttle)
         # return self.throttle_map(throttle_accl, 0.012) if throttle_accl != 0 else self.throttle_map(throttle_brk, -0.07)
         
     def tactical_dm(self, action: Union[dict, str] = None) -> None:
-        
-        ''' Tactical module that handles heuristic for each possible action'''
-        
+
         if(action == "ACC"):
             
             '''Adaptive Cruise Control. The ego vehicle keeps the time gap from the front vehicle '''
@@ -576,10 +575,17 @@ class DecisionMakingVehicle(MDPVehicle):
             self.phy_action = {"steering": phy_steering, "acceleration": phy_acceleration}
             
             f = open(r'/Users/fornerispighetti/HighwayDRL/highway_env/ACC_data.csv', 'a')
-            f.write(str(self.speed) + "," + str(self.front_vehicle.speed) + "," \
-            + str(self.phy_action['acceleration']) + "," \
-            + str(self.front_vehicle.position[0] - self.position[0]) + "," + str(gap) + "," + str(time.perf_counter()) +"\n")
-            
+
+            if(self.front_vehicle):
+                f.write(str(self.speed) + "," + str(self.front_vehicle.speed) + "," \
+                + str(self.phy_action['acceleration']) + "," \
+                + str(self.front_vehicle.position[0] - self.position[0]) + "," + str(gap) + "," + str(time.perf_counter()) +"\n")
+
+            else:
+                f.write("\n"+ str(self.speed) + "," + str(0) + "," \
+                + str(self.phy_action['acceleration']) + "," \
+                + str(0) + "," + str(0) + "," + str(time.perf_counter()))
+                
 
         elif(action == "OVERTAKE"):
             

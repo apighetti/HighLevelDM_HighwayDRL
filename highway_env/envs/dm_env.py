@@ -53,9 +53,12 @@ class DecisionMakingEnv(AbstractEnv):
     def _reset(self) -> None:
         self._create_road()
         self._create_vehicles()
+        f = open(r'/Users/fornerispighetti/HighwayDRL/highway_env/ACC_data.csv', 'a')
+        f.write("ego_speed,front_vehicle_speed,throttle,distance,gap,counter" + "\n")
 
     def _create_road(self) -> None:
         """Create a road composed of straight adjacent lanes."""
+        
         self.road = Road(network=RoadNetwork.straight_road_network(self.config["lanes_count"], speed_limit=30),
                          np_random=self.np_random, record_history=self.config["show_trajectories"])
 
