@@ -412,7 +412,7 @@ class DecisionMakingVehicle(MDPVehicle):
         self.my_lane = my_lane
         self.last_throttle = last_throttle
         self.pid_brake = PID(0.65, 0, 0.9)
-        self.pid_acc = PID(0.3, 0, 0.2) # 0.8
+        self.pid_acc = PID(0.3, 0, 0.2)
         self.pid_overtake = PID(0.3, 0, 0)
 
     def act(self, action: Union[dict, str] = None) -> None:
@@ -430,8 +430,6 @@ class DecisionMakingVehicle(MDPVehicle):
             if(self.rml_flag or self.overtake_flag):
                 self.rml_flag = False
                 self.overtake_flag = False
-                self.pid_acc.clear()
-                self.pid_brake.clear()
 
             if(not self.acc_flag):
                 self.acc_flag = True
@@ -442,8 +440,6 @@ class DecisionMakingVehicle(MDPVehicle):
             if(self.acc_flag or self.rml_flag):
                 self.acc_flag = False
                 self.rml_flag = False
-                self.pid_acc.clear()
-                self.pid_brake.clear()
 
             if(not self.overtake_flag):
                 self.overtake_flag = True
@@ -455,8 +451,6 @@ class DecisionMakingVehicle(MDPVehicle):
             if(self.acc_flag or self.overtake_flag):
                 self.acc_flag = False
                 self.overtake_flag = False
-                self.pid_acc.clear()
-                self.pid_brake.clear()
 
             if(not self.rml_flag):
                 self.rml_flag = True
@@ -490,42 +484,42 @@ class DecisionMakingVehicle(MDPVehicle):
 
         return gap
 
-    # def throttle_map(self, throttle, norm_factor) -> float:
-    #     if norm_factor == 0.012:
-    #         if self.last_throttle < 0:
-    #             self.last_throttle = 0
-    #         if abs(throttle - self.last_throttle) > norm_factor:
-    #             if throttle < self.last_throttle:
-    #                 throttle = self.last_throttle - norm_factor
-    #             else:
-    #                 throttle = self.last_throttle + norm_factor
-    #     else:
-    #         if self.last_throttle > 0:
-    #             self.last_throttle = 0
-    #         if throttle + self.last_throttle < norm_factor:
-    #             if throttle < self.last_throttle:
-    #                 throttle = self.last_throttle + norm_factor
-    #             else:
-    #                 throttle = self.last_throttle - norm_factor
+    def throttle_map(self, throttle, norm_factor) -> float:
+        if norm_factor == 0.012:
+            if self.last_throttle < 0:
+                self.last_throttle = 0
+            if abs(throttle - self.last_throttle) > norm_factor:
+                if throttle < self.last_throttle:
+                    throttle = self.last_throttle - norm_factor
+                else:
+                    throttle = self.last_throttle + norm_factor
+        else:
+            if self.last_throttle > 0:
+                self.last_throttle = 0
+            if throttle + self.last_throttle < norm_factor:
+                if throttle < self.last_throttle:
+                    throttle = self.last_throttle + norm_factor
+                else:
+                    throttle = self.last_throttle - norm_factor
 
-    #     if throttle > 5:
-    #         throttle = 5
-    #     elif throttle < -5:
-    #         throttle = -5
-    #     self.last_throttle = throttle
-    #     return throttle
-
-    def throttle_map(self, throttle):
         if throttle > 5:
             throttle = 5
         elif throttle < -5:
             throttle = -5
+        self.last_throttle = throttle
         return throttle
+
+    # def throttle_map(self, throttle):
+    #     if throttle > 5:
+    #         throttle = 5
+    #     elif throttle < -5:
+    #         throttle = -5
+    #     return throttle
 
     def physical_validity_modifier(self, target_speed = None , target_time_gap = None, is_overtaking = False):
         # print(target_time_gap)
-        # throttle_brk = 0
-        # throttle_accl = 0
+        throttle_brk = 0
+        throttle_accl = 0
         if(target_time_gap):
             
             # print(self.pid_brake.get_value(self.time_gap_error(2, self, self.front_vehicle), target_time_gap),\
@@ -535,18 +529,18 @@ class DecisionMakingVehicle(MDPVehicle):
                 return 0
 
             if target_time_gap < 0:
-                throttle = -self.pid_brake.get_value(target_time_gap, self.TTG)
+                throttle_brk = -self.pid_brake.get_value(target_time_gap, self.TTG)
 
             else :
-                throttle = -self.pid_acc.get_value(target_time_gap, self.TTG)
+                throttle_accl = -self.pid_acc.get_value(target_time_gap, self.TTG)
             # return 0.9 * target_time_gap + 0.005*(self.speed - self.prev_speed)/0.05 if target_time_gap < 0 else target_time_gap * 0.7 + 0.005*(self.speed - self.prev_speed)/0.05
         else:
             # throttle = self.speed_control(target_speed)
-            throttle = self.pid_overtake.get_value(self.speed, target_speed) if is_overtaking \
+            throttle_accl = self.pid_overtake.get_value(self.speed, target_speed) if is_overtaking \
                 else self.pid_acc.get_value(self.speed, target_speed)
 
-        return self.throttle_map(throttle)
-        # return self.throttle_map(throttle_accl, 0.012) if throttle_accl != 0 else self.throttle_map(throttle_brk, -0.07)
+        # return self.throttle_map(throttle)
+        return self.throttle_map(throttle_accl, 0.012) if throttle_accl != 0 else self.throttle_map(throttle_brk, -0.07)
         
     def tactical_dm(self, action: Union[dict, str] = None) -> None:
         
@@ -575,10 +569,10 @@ class DecisionMakingVehicle(MDPVehicle):
             phy_steering = 0.0
             self.phy_action = {"steering": phy_steering, "acceleration": phy_acceleration}
             
-            f = open(r'/Users/fornerispighetti/HighwayDRL/highway_env/ACC_data.csv', 'a')
-            f.write(str(self.speed) + "," + str(self.front_vehicle.speed) + "," \
-            + str(self.phy_action['acceleration']) + "," \
-            + str(self.front_vehicle.position[0] - self.position[0]) + "," + str(gap) + "," + str(time.perf_counter()) +"\n")
+            # f = open(r'/Users/fornerispighetti/HighwayDRL/highway_env/ACC_data.csv', 'a')
+            # f.write(str(self.speed) + "," + str(self.front_vehicle.speed) + "," \
+            # + str(self.phy_action['acceleration']) + "," \
+            # + str(self.front_vehicle.position[0] - self.position[0]) + "," + str(gap) + "," + str(time.perf_counter()) +"\n")
             
 
         elif(action == "OVERTAKE"):

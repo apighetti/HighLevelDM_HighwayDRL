@@ -32,7 +32,7 @@ class DecisionMakingEnv(AbstractEnv):
                 "type": "DecisionMakingAction",
             },
             "lanes_count": 3,
-            "vehicles_count": 30,
+            "vehicles_count": 35,
             "controlled_vehicles": 1,
             "initial_lane_id": None,
             "duration": 120,  # [s]
@@ -42,10 +42,10 @@ class DecisionMakingEnv(AbstractEnv):
             "not_in_right_lane_reward": -0.004,  # The reward received when driving on the right-most lanes, linearly mapped to
                                        # zero for other lanes.
             "distance_to_tv_reward": -0.03,
-            "high_speed_reward": 0.0001,  # The reward received when driving at full speed, linearly mapped to zero for
+            # "high_speed_reward": 0.001,  # The reward received when driving at full speed, linearly mapped to zero for
                                        # lower speeds according to config["reward_speed_range"].
             # "lane_change_reward": -0.005,   # The reward received at each lane change action.
-            "reward_speed_range": [30, 36],
+            # "reward_speed_range": [30, 36],
             "offroad_terminal": False
         })
         return config
@@ -157,13 +157,13 @@ class DecisionMakingEnv(AbstractEnv):
         speed_diff = utils.lmap((36 - self.vehicle.speed), [0,36] , [0, 1])
 
         # Use forward speed rather than speed, see https://github.com/eleurent/highway-env/issues/268
-        forward_speed = self.vehicle.speed * np.cos(self.vehicle.heading)
-        scaled_speed = utils.lmap(forward_speed, self.config["reward_speed_range"], [0, 1])
+        # forward_speed = self.vehicle.speed * np.cos(self.vehicle.heading)
+        # scaled_speed = utils.lmap(forward_speed, self.config["reward_speed_range"], [0, 1])
 
         reward = self.config["collision_reward"] * self.vehicle.crashed \
             + self.config["distance_to_tv_reward"] * speed_diff \
-            + self.config["not_in_right_lane_reward"] * (1 - (lane / max(len(neighbours) - 1, 1))) \
-            + self.config["high_speed_reward"] * np.clip(scaled_speed, 0, 1)
+            + self.config["not_in_right_lane_reward"] * (1 - (lane / max(len(neighbours) - 1, 1)))
+            # + self.config["high_speed_reward"] * np.clip(scaled_speed, 0, 1)
 
         # reward = utils.lmap(reward,
         #                   [self.config["distance_to_tv_reward"],
