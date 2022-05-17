@@ -409,8 +409,8 @@ class DecisionMakingVehicle(MDPVehicle):
         self.velocity_integral = velocity_integral
         self.prev_velocity = prev_velocity
         self.my_lane = my_lane
-        self.pid_brake = PID(0.65, 0, 0.9)
-        self.pid_acc = PID(0.27, 0, 0.2) # 0.8
+        self.pid_brake = PID(0.8, 0, 0.9)
+        self.pid_acc = PID(0.2, 0, 0.2) # 0.8
         self.pid_overtake = PID(0.05, 0, 0)
 
     def act(self, action: Union[dict, str] = None) -> None:
