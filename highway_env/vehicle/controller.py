@@ -569,10 +569,10 @@ class DecisionMakingVehicle(MDPVehicle):
             phy_steering = 0.0
             self.phy_action = {"steering": phy_steering, "acceleration": phy_acceleration}
             
-            # f = open(r'/Users/fornerispighetti/HighwayDRL/highway_env/ACC_data.csv', 'a')
-            # f.write(str(self.speed) + "," + str(self.front_vehicle.speed) + "," \
-            # + str(self.phy_action['acceleration']) + "," \
-            # + str(self.front_vehicle.position[0] - self.position[0]) + "," + str(gap) + "," + str(time.perf_counter()) +"\n")
+            f = open(r'C:\Users\luka-\OneDrive\Documenti\Università\Laurea Magistrale\Final Thesis\HighwayDRL\highway_env\ACC_data.csv', 'a')
+            f.write(str(self.speed) + "," + str(self.front_vehicle.speed) + "," \
+            + str(self.phy_action['acceleration']) + "," \
+            + str(self.front_vehicle.position[0] - self.position[0]) + "," + str(gap) + "," + str(time.perf_counter()) +"\n")
             
 
         elif(action == "OVERTAKE"):
