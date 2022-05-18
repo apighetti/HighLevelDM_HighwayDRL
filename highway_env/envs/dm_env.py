@@ -36,8 +36,8 @@ class DecisionMakingEnv(AbstractEnv):
             "vehicles_count": 25,
             "controlled_vehicles": 1,
             "initial_lane_id": None,
-            "duration": 60,  # [s]
-            "ego_spacing": 1,
+            "duration": 120,  # [s]
+            "ego_spacing": 2,
             "vehicles_density": 0.7,
             "collision_reward": -3,              # The reward received when colliding with a vehicle.
             "not_in_right_lane_reward": -0.004,  # The reward received when driving on the right-most lanes, linearly mapped to
@@ -176,6 +176,7 @@ class DecisionMakingEnv(AbstractEnv):
 
 
         if(self._is_terminal()):
+            # print("OI")
             reward += COL_REWARDS[collision_index] * self.vehicle.crashed \
             + self.config["distance_to_td_reward"] * duration_diff
 
@@ -185,7 +186,6 @@ class DecisionMakingEnv(AbstractEnv):
         #                   [0, 1])
 
         reward = 0 if not self.vehicle.on_road else reward
-
         # print(f"\nreward: {reward}, \ndense rewards:\n\ttarget velocity reward: {self.config['distance_to_tv_reward'] * speed_diff},\n\tnot in RL reward:{self.config['not_in_right_lane_reward'] * (1 - (lane / max(len(neighbours) - 1, 1)))} \
         #     \nsparse rewards:\n\tcollision reward: {COL_REWARDS[collision_index]},\n\tduration reward: {self.config['distance_to_td_reward'] * duration_diff}")
         return reward
