@@ -14,6 +14,7 @@ from highway_env.vehicle.objects import LaneIndex
 
 # START_SEC = 120
 COL_REWARDS = [-1.7, -2.1, -2.5, -3]
+
 class DecisionMakingEnv(AbstractEnv):
     """
     A highway driving environment.
@@ -21,6 +22,10 @@ class DecisionMakingEnv(AbstractEnv):
     The vehicle is driving on a straight highway with several lanes, and is rewarded for reaching a high speed,
     staying on the rightmost lanes and avoiding collisions.
     """
+
+    LAST_STEPS = 1
+    TOTAL_SPACE = 0
+    LAST_VEHICLE_SPEED = 0
 
     @classmethod
     def default_config(cls) -> dict:
@@ -39,11 +44,12 @@ class DecisionMakingEnv(AbstractEnv):
             "duration": 120,  # [s]
             "ego_spacing": 2,
             "vehicles_density": 0.7,
-            "collision_reward": -3,              # The reward received when colliding with a vehicle.
+            # "collision_reward": -3,              # The reward received when colliding with a vehicle.
             "not_in_right_lane_reward": -0.004,  # The reward received when driving on the right-most lanes, linearly mapped to
                                                  # zero for other lanes.
             "distance_to_tv_reward": -0.15,
-            "distance_to_td_reward": 2.5,
+            "decision_change_reward": -0.25,
+            "distance_reward": 0.005,
             # "high_speed_reward": 0.001,        # The reward received when driving at full speed, linearly mapped to zero for
                                                  # lower speeds according to config["reward_speed_range"].
             # "lane_change_reward": -0.005,      # The reward received at each lane change action.
@@ -162,7 +168,15 @@ class DecisionMakingEnv(AbstractEnv):
 
         speed_diff = utils.lmap((36 - self.vehicle.speed), [0,36] , [0,1])
 
-        duration_diff = utils.lmap((self.config['duration'] - self.steps), [self.config['duration'],0], [0,1])
+        # duration_diff = utils.lmap((self.config['duration'] - self.steps), [self.config['duration'],0], [0,1])
+        self.TOTAL_SPACE += abs(self.vehicle.speed*(self.steps - self.LAST_STEPS))
+        self.LAST_VEHICLE_SPEED = self.vehicle.speed
+        self.LAST_STEPS = self.steps
+        # print(round(self.TOTAL_SPACE,3))
+
+        km_travelled = utils.lmap(round(self.TOTAL_SPACE,3), [0,36*self.config['duration']], [0,1])
+        
+        # print(f"\ndistance to td reward {self.config['distance_reward'] * km_travelled}")
 
         collision_index = int(utils.lmap(abs(self.steps - self.config['duration']), [0,self.config['duration']], [3,0]))
 
@@ -170,28 +184,27 @@ class DecisionMakingEnv(AbstractEnv):
         # forward_speed = self.vehicle.speed * np.cos(self.vehicle.heading)
         # scaled_speed = utils.lmap(forward_speed, self.config["reward_speed_range"], [0, 1])
 
-        reward = self.config["distance_to_tv_reward"] * speed_diff \
-            + self.config["not_in_right_lane_reward"] * (1 - (lane / max(len(neighbours) - 1, 1)))
+        reward = COL_REWARDS[collision_index] * self.vehicle.crashed \
+            + self.config["distance_to_tv_reward"] * speed_diff \
+            + self.config["not_in_right_lane_reward"] * (1 - (lane / max(len(neighbours) - 1, 1))) \
+            + self.config["distance_reward"] * km_travelled
           # + self.config["high_speed_reward"] * np.clip(scaled_speed, 0, 1)
-
-
-        if(self._is_terminal()):
-            # print("OI")
-            reward += COL_REWARDS[collision_index] * self.vehicle.crashed \
-            + self.config["distance_to_td_reward"] * duration_diff
-
+ 
         # reward = utils.lmap(reward,
         #                   [self.config["distance_to_tv_reward"],
         #                    self.config["not_in_right_lane_reward"]],
         #                   [0, 1])
 
         reward = 0 if not self.vehicle.on_road else reward
-        # print(f"\nreward: {reward}, \ndense rewards:\n\ttarget velocity reward: {self.config['distance_to_tv_reward'] * speed_diff},\n\tnot in RL reward:{self.config['not_in_right_lane_reward'] * (1 - (lane / max(len(neighbours) - 1, 1)))} \
-        #     \nsparse rewards:\n\tcollision reward: {COL_REWARDS[collision_index]},\n\tduration reward: {self.config['distance_to_td_reward'] * duration_diff}")
+        print(f"\nreward: {reward}, \ndense rewards:\n\ttarget velocity reward: {self.config['distance_to_tv_reward'] * speed_diff},\n\tnot in RL reward:{self.config['not_in_right_lane_reward'] * (1 - (lane / max(len(neighbours) - 1, 1)))},\n\tduration reward: {self.config['distance_reward'] * km_travelled} \
+            \nsparse rewards:\n\tcollision reward: {COL_REWARDS[collision_index]}")
         return reward
 
     def _is_terminal(self) -> bool:
         """The episode is over if the ego vehicle crashed or the time is out."""
+        self.LAST_STEPS = 1
+        self.TOTAL_SPACE = 0
+        self.LAST_VEHICLE_SPEED = 0
         return self.vehicle.crashed or \
             self.steps >= self.config["duration"] or \
             (self.config["offroad_terminal"] and not self.vehicle.on_road)

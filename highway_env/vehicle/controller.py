@@ -372,9 +372,8 @@ class DecisionMakingVehicle(MDPVehicle):
     """An MDP vehicle which performs high-level decision making actions."""
 
     MAX_SPEED = 36 # m/s
-    TTG = 1
-    old_action = ""
-    
+    TTG = 2
+
     def __init__(self,
                  road: Road,
                  position: List[float],
@@ -671,10 +670,7 @@ class DecisionMakingVehicle(MDPVehicle):
     # Override simulation step method to implement continuous DM actions
     def step(self, dt: float) -> None:
         if(self.acc_flag):
-            # print(dt)
             self.tactical_dm("ACC")
-            
-            
         elif(self.overtake_flag):
              self.tactical_dm("OVERTAKE")
         elif(self.rml_flag):
