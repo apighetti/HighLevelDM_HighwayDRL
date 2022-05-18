@@ -392,6 +392,7 @@ class DecisionMakingVehicle(MDPVehicle):
                  overtake_flag: Optional[Boolean] = False,
                  throttle: Optional[float] = 0.0,
                  timer: Optional[int] = 0,
+                 current_action: Optional[Union[dict, str]] = None,
                  my_lane: Optional[int] = 0
                  ) -> None:
                  
@@ -409,6 +410,7 @@ class DecisionMakingVehicle(MDPVehicle):
         self.velocity_integral = velocity_integral
         self.prev_velocity = prev_velocity
         self.my_lane = my_lane
+        self.current_action = current_action
         self.pid_brake = PID(0.65, 0, 0.9)
         self.pid_acc = PID(0.27, 0, 0.2) # 0.8
         self.pid_overtake = PID(0.05, 0, 0)
@@ -431,6 +433,7 @@ class DecisionMakingVehicle(MDPVehicle):
 
             if(not self.acc_flag):
                 self.acc_flag = True
+                self.current_action = "ACC"
                 # print("ACC ON")
                         
         elif action == "OVERTAKE":
@@ -442,6 +445,7 @@ class DecisionMakingVehicle(MDPVehicle):
             if(not self.overtake_flag):
                 self.overtake_flag = True
                 self.my_lane = self.lane_index[2] - 1
+                self.current_action = "OVERTAKE"
                 # print("OVERTAKE ON")
 
         elif action == "RIGHTMOSTLANE":
@@ -454,6 +458,7 @@ class DecisionMakingVehicle(MDPVehicle):
                 self.rml_flag = True
                 self.timer = -1
                 self.phy_action = None
+                self.current_action = "RML"
                 # self.my_lane = self.lane_index[2] + 1
                 # print("RIGHTMOSTLANE ON")
         else:
@@ -540,6 +545,7 @@ class DecisionMakingVehicle(MDPVehicle):
         # return self.throttle_map(throttle_accl, 0.012) if throttle_accl != 0 else self.throttle_map(throttle_brk, -0.07)
         
     def tactical_dm(self, action: Union[dict, str] = None) -> None:
+        self.front_vehicle = self.get_front_vehicle()
 
         if(action == "ACC"):
             
@@ -664,7 +670,6 @@ class DecisionMakingVehicle(MDPVehicle):
 
     # Override simulation step method to implement continuous DM actions
     def step(self, dt: float) -> None:
-        self.front_vehicle = self.get_front_vehicle()
         if(self.acc_flag):
             # print(dt)
             self.tactical_dm("ACC")

@@ -242,6 +242,11 @@ class ObservationGraphics(object):
             sim_surface.blit(egoDisplay, (20,10))
             acceleration_display = myFont.render("Throttle: " + str(round(obs.observer_vehicle.throttle,3)) + " m/s\u00b2", 1, (255,255,255))
             sim_surface.blit(acceleration_display, (1000,5))
+            action_display = myFont.render(f"Last action: {obs.observer_vehicle.current_action}", 1, (255,255,0))
+            if obs.observer_vehicle.current_action != None:
+                sim_surface.blit(action_display, (1000,65))
+
+
 
             if (obs.observer_vehicle.front_vehicle):
                 fvDisplay = myFont.render("Front vehicle speed: "+str(round(obs.observer_vehicle.front_vehicle.speed*3.6, 2))+" km/h", 1, (255, 255, 255))
