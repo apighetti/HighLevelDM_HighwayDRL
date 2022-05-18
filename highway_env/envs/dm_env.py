@@ -26,6 +26,7 @@ class DecisionMakingEnv(AbstractEnv):
     LAST_STEPS = 1
     TOTAL_SPACE = 0
     LAST_VEHICLE_SPEED = 0
+    # LAST_ACTION = ""
 
     @classmethod
     def default_config(cls) -> dict:
@@ -175,6 +176,12 @@ class DecisionMakingEnv(AbstractEnv):
         # print(round(self.TOTAL_SPACE,3))
 
         km_travelled = utils.lmap(round(self.TOTAL_SPACE,3), [0,36*self.config['duration']], [0,1])
+
+        # if self.LAST_ACTION != self.vehicle.current_action:
+            
+
+
+        # self.LAST_ACTION = self.vehicle.current_action
         
         # print(f"\ndistance to td reward {self.config['distance_reward'] * km_travelled}")
 
@@ -196,15 +203,16 @@ class DecisionMakingEnv(AbstractEnv):
         #                   [0, 1])
 
         reward = 0 if not self.vehicle.on_road else reward
-        print(f"\nreward: {reward}, \ndense rewards:\n\ttarget velocity reward: {self.config['distance_to_tv_reward'] * speed_diff},\n\tnot in RL reward:{self.config['not_in_right_lane_reward'] * (1 - (lane / max(len(neighbours) - 1, 1)))},\n\tduration reward: {self.config['distance_reward'] * km_travelled} \
-            \nsparse rewards:\n\tcollision reward: {COL_REWARDS[collision_index]}")
+        # print(f"\nreward: {reward}, \ndense rewards:\n\ttarget velocity reward: {self.config['distance_to_tv_reward'] * speed_diff},\n\tnot in RL reward:{self.config['not_in_right_lane_reward'] * (1 - (lane / max(len(neighbours) - 1, 1)))},\n\tduration reward: {self.config['distance_reward'] * km_travelled} \
+        #     \nsparse rewards:\n\tcollision reward: {COL_REWARDS[collision_index]}")
         return reward
 
     def _is_terminal(self) -> bool:
         """The episode is over if the ego vehicle crashed or the time is out."""
-        self.LAST_STEPS = 1
-        self.TOTAL_SPACE = 0
-        self.LAST_VEHICLE_SPEED = 0
+        # self.LAST_STEPS = 1
+        # self.TOTAL_SPACE = 0
+        # self.LAST_VEHICLE_SPEED = 0
+        # self.LAST_ACTION = ""
         return self.vehicle.crashed or \
             self.steps >= self.config["duration"] or \
             (self.config["offroad_terminal"] and not self.vehicle.on_road)
