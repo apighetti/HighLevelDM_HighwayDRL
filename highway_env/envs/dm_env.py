@@ -13,7 +13,7 @@ from highway_env.vehicle.kinematics import Vehicle
 from highway_env.vehicle.objects import LaneIndex
 
 # START_SEC = 120
-COL_REWARDS = [-0.1, -0.5, -1, -2.5] # ordini di grandezza differenti
+COL_REWARDS = [-0.001, -0.01, -1, -5.0] # ordini di grandezza differenti
 
 class DecisionMakingEnv(AbstractEnv):
     """
@@ -48,9 +48,9 @@ class DecisionMakingEnv(AbstractEnv):
             # "collision_reward": -3,            // COLLISION IS DIVIDED # The reward received when colliding with a vehicle.
             "not_in_right_lane_reward": -0.004,  # The reward received when driving on the right-most lanes, linearly mapped to
                                                  # zero for other lanes.
-            "distance_to_tv_reward": -0.07,      # -0.015 // non basta come incentivo alla velocità
+            "distance_to_tv_reward": -0.09,      # -0.015 // non basta come incentivo alla velocità
             # "decision_change_reward": -0.25,   // NOT IMPLEMENTED YET
-            "distance_reward": 0.05,
+            "distance_reward": 0.03,
             # "high_speed_reward": 0.001,        # The reward received when driving at full speed, linearly mapped to zero for
                                                  # lower speeds according to config["reward_speed_range"].
             # "lane_change_reward": -0.005,      # The reward received at each lane change action.
