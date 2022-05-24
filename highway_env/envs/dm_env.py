@@ -1,6 +1,5 @@
 from distutils.command.config import config
-from xmlrpc.client import Boolean
-import numpy as np
+import random
 from gym.envs.registration import register
 
 from highway_env import utils
@@ -46,12 +45,12 @@ class DecisionMakingEnv(AbstractEnv):
             "duration": 120,  # [s]
             "ego_spacing": 0.5,
             "vehicles_density": 0.6,
-            "collision_reward": -3,            # The reward received when colliding with a vehicle.
+            "collision_reward": -2,            # The reward received when colliding with a vehicle.
             "not_in_right_lane_reward": -0.08,  # The reward received when driving on the right-most lanes, linearly mapped to
                                                  # zero for other lanes.
             "distance_to_tv_reward": -0.01,      # -0.015 // non basta come incentivo alla velocità
             # "decision_change_reward": -0.25,   // NOT IMPLEMENTED YET
-            "distance_reward": 0.01,
+            "distance_reward": 0.008,
             # "high_speed_reward": 0.001,        # The reward received when driving at full speed, linearly mapped to zero for
                                                  # lower speeds according to config["reward_speed_range"].
             # "lane_change_reward": -0.005,      # The reward received at each lane change action.
@@ -61,8 +60,9 @@ class DecisionMakingEnv(AbstractEnv):
         return config
 
     def _reset(self) -> None:
+        w = self.vehicles_distribution()
         self._create_road()
-        self._create_vehicles()
+        self._create_vehicles(w)
         # f = open(r'/Users/fornerispighetti/HighwayDRL/highway_env/ACC_data.csv', 'a')
         # f.write("ego_speed,front_vehicle_speed,throttle,distance,gap,counter" + "\n")
         # f.close()
@@ -73,7 +73,28 @@ class DecisionMakingEnv(AbstractEnv):
         self.road = Road(network=RoadNetwork.straight_road_network(self.config["lanes_count"], speed_limit=30),
                          np_random=self.np_random, record_history=self.config["show_trajectories"])
 
-    def _create_vehicles(self) -> None:
+    def vehicles_distribution(self):
+        '''Create array of weights that will be used to spawn vehicles.'''
+        
+        n = self.config['lanes_count']
+        lanes_list = range(0,n)
+        weights = [None]*n
+        
+        for i in lanes_list: 
+            weights[i] = (lanes_list[i])*(10**i)+1
+            
+        return weights
+    
+    def get_npc_speed(self, aux, sequence):
+        '''Compute speed of a spawned vehicle according to its position.'''
+        
+        if aux == 0:
+            aux = 1
+            
+        speed = (25 + 3*sequence[-aux])
+        return speed
+
+    def _create_vehicles(self, vehicle_distribution) -> None:
         """Create some new random vehicles of a given type, and add them on the road."""
         other_vehicles_type = utils.class_from_path(self.config["other_vehicles_type"])
         other_per_controlled = near_split(self.config["vehicles_count"], num_bins=self.config["controlled_vehicles"])
@@ -82,18 +103,19 @@ class DecisionMakingEnv(AbstractEnv):
         for others in other_per_controlled:
             vehicle = Vehicle.create_random(
                 self.road,
-                speed=20,
+                speed=25,
                 lane_id=self.config["initial_lane_id"],
                 spacing=self.config["ego_spacing"]
             )
-
             vehicle = self.action_type.vehicle_class(self.road, vehicle.position, vehicle.heading, vehicle.speed)
-
             self.controlled_vehicles.append(vehicle)
             self.road.vehicles.append(vehicle)
 
-            for _ in range(others):
-                vehicle = other_vehicles_type.create_random(self.road, spacing=1 / self.config["vehicles_density"])
+            for i in range(others):
+                aux = random.choices(range(0,self.config['lanes_count']), weights = vehicle_distribution, k=1)[0]
+                # vehicle = other_vehicles_type.create_random(self.road, lane_id=self.config["npc_initial_lane_id"], spacing=1 / self.config["vehicles_density"])
+                vehicle = other_vehicles_type.create_random(self.road, speed = self.get_npc_speed(aux,range(0,self.config['lanes_count'])),\
+                    lane_id = aux, spacing=1 / self.config["vehicles_density"]) #edit NPC
                 vehicle.randomize_behavior()
                 self.road.vehicles.append(vehicle)
 
