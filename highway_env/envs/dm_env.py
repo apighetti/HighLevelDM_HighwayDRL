@@ -43,7 +43,7 @@ class DecisionMakingEnv(AbstractEnv):
             "lanes_count": 3,
             "vehicles_count": 35, # curriculum learning su lanes e npc-vehicles
             "controlled_vehicles": 1,
-            "initial_lane_id": None,
+            "initial_lane_id": 0,
             "duration": 120,  # [s]
             "ego_spacing": 1,
             "vehicles_density": 0.7,
@@ -65,9 +65,9 @@ class DecisionMakingEnv(AbstractEnv):
         w = self.vehicles_distribution()
         self._create_road()
         self._create_vehicles(w)
-        # f = open(r'/Users/fornerispighetti/HighwayDRL/highway_env/ACC_data.csv', 'a')
-        # f.write("ego_speed,front_vehicle_speed,throttle,distance,gap,counter" + "\n")
-        # f.close()
+        f = open(r'C:\Users\luka-\Desktop\ACC_data.csv', 'a')
+        f.write("ego_speed,front_vehicle_speed,throttle,distance,gap,counter" + "\n")
+        f.close()
 
     def _create_road(self) -> None:
         """Create a road composed of straight adjacent lanes."""
