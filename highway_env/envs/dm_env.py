@@ -45,12 +45,12 @@ class DecisionMakingEnv(AbstractEnv):
             "duration": 120,  # [s]
             "ego_spacing": 0.5,
             "vehicles_density": 0.6,
-            "collision_reward": -2,            # The reward received when colliding with a vehicle.
-            "not_in_right_lane_reward": -0.08,  # The reward received when driving on the right-most lanes, linearly mapped to
+            "collision_reward": -5,            # The reward received when colliding with a vehicle.
+            "not_in_right_lane_reward": 0,  # The reward received when driving on the right-most lanes, linearly mapped to
                                                  # zero for other lanes.
-            "distance_to_tv_reward": -0.01,      # -0.015 // non basta come incentivo alla velocità
+            "distance_to_tv_reward": -0.16,      # -0.015 // non basta come incentivo alla velocità
             # "decision_change_reward": -0.25,   // NOT IMPLEMENTED YET
-            "distance_reward": 0.008,
+            "distance_reward": 0.16, # 0.008
             # "high_speed_reward": 0.001,        # The reward received when driving at full speed, linearly mapped to zero for
                                                  # lower speeds according to config["reward_speed_range"].
             # "lane_change_reward": -0.005,      # The reward received at each lane change action.
