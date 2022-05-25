@@ -53,7 +53,7 @@ class DecisionMakingEnv(AbstractEnv):
             # "distance_to_tv_reward": -0.01,      # -0.015 // non basta come incentivo alla velocità
             # "decision_change_reward": -0.25,   // NOT IMPLEMENTED YET
             # "distance_reward": 0.08,
-            "high_speed_reward": 0.08,        # The reward received when driving at full speed, linearly mapped to zero for
+            "high_speed_reward": 0.3,        # The reward received when driving at full speed, linearly mapped to zero for
                                                  # lower speeds according to config["reward_speed_range"].
             # "lane_change_reward": -0.005,      # The reward received at each lane change action.
             "reward_speed_range": [30, 36],
