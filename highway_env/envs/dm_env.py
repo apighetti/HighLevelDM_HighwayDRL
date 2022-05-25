@@ -1,6 +1,7 @@
 from distutils.command.config import config
 import random
 from gym.envs.registration import register
+import numpy as np
 
 from highway_env import utils
 from highway_env.envs.common.abstract import AbstractEnv
@@ -12,7 +13,7 @@ from highway_env.vehicle.kinematics import Vehicle
 from highway_env.vehicle.objects import LaneIndex
 
 # START_SEC = 120
-COL_REWARDS = [-0.5, -1, -3, -5] # ordini di grandezza differenti
+# COL_REWARDS = [-0.5, -1, -3, -5] # ordini di grandezza differenti
 # COL_REWARDS = [-3, -2.5, -2, -1.5] # ZZ try
 
 class DecisionMakingEnv(AbstractEnv):
@@ -38,23 +39,24 @@ class DecisionMakingEnv(AbstractEnv):
             "action": {
                 "type": "DecisionMakingAction",
             },
+            "screen_width": 1250,
             "lanes_count": 3,
             "vehicles_count": 35, # curriculum learning su lanes e npc-vehicles
             "controlled_vehicles": 1,
             "initial_lane_id": None,
             "duration": 120,  # [s]
-            "ego_spacing": 0.5,
-            "vehicles_density": 0.6,
-            "collision_reward": -2,            # The reward received when colliding with a vehicle.
-            "not_in_right_lane_reward": -0.08,  # The reward received when driving on the right-most lanes, linearly mapped to
-                                                 # zero for other lanes.
-            "distance_to_tv_reward": -0.01,      # -0.015 // non basta come incentivo alla velocità
+            "ego_spacing": 1,
+            "vehicles_density": 0.7,
+            "collision_reward": -1,            # The reward received when colliding with a vehicle.
+            # "not_in_right_lane_reward": -0.08,  # The reward received when driving on the right-most lanes, linearly mapped to
+            #                                      # zero for other lanes.
+            # "distance_to_tv_reward": -0.01,      # -0.015 // non basta come incentivo alla velocità
             # "decision_change_reward": -0.25,   // NOT IMPLEMENTED YET
-            "distance_reward": 0.008,
-            # "high_speed_reward": 0.001,        # The reward received when driving at full speed, linearly mapped to zero for
+            # "distance_reward": 0.08,
+            "high_speed_reward": 0.08,        # The reward received when driving at full speed, linearly mapped to zero for
                                                  # lower speeds according to config["reward_speed_range"].
             # "lane_change_reward": -0.005,      # The reward received at each lane change action.
-            # "reward_speed_range": [30, 36],
+            "reward_speed_range": [30, 36],
             "offroad_terminal": False
         })
         return config
@@ -177,9 +179,9 @@ class DecisionMakingEnv(AbstractEnv):
         :param action: the last action performed
         :return: the corresponding reward
         """
-        neighbours = self.road.network.all_side_lanes(self.vehicle.lane_index)
-        lane = self.vehicle.target_lane_index[2] if isinstance(self.vehicle, ControlledVehicle) \
-            else self.vehicle.lane_index[2]
+        # neighbours = self.road.network.all_side_lanes(self.vehicle.lane_index)
+        # lane = self.vehicle.target_lane_index[2] if isinstance(self.vehicle, ControlledVehicle) \
+        #     else self.vehicle.lane_index[2]
         
 
         # lanes_count = len(self.road.network.lanes_list())
@@ -190,15 +192,15 @@ class DecisionMakingEnv(AbstractEnv):
         # else:
         #     not_in_rl = 0
 
-        speed_diff = utils.lmap((36 - self.vehicle.speed), [0,36] , [0,1])
+        # speed_diff = utils.lmap((36 - self.vehicle.speed), [0,36] , [0,1])
 
         # duration_diff = utils.lmap((self.config['duration'] - self.steps), [self.config['duration'],0], [0,1])
-        self.TOTAL_SPACE += abs(self.vehicle.speed*(self.steps - self.LAST_STEPS))
-        self.LAST_VEHICLE_SPEED = self.vehicle.speed
-        self.LAST_STEPS = self.steps
-        # print(round(self.TOTAL_SPACE,3))
+        # self.TOTAL_SPACE += abs(self.vehicle.speed*(self.steps - self.LAST_STEPS))
+        # self.LAST_VEHICLE_SPEED = self.vehicle.speed
+        # self.LAST_STEPS = self.steps
+        # # print(round(self.TOTAL_SPACE,3))
 
-        km_travelled = utils.lmap(round(self.TOTAL_SPACE,3), [0,36*self.config['duration']], [0,1])
+        # km_travelled = utils.lmap(round(self.TOTAL_SPACE,3), [0,36*self.config['duration']], [0,1])
         # print(f'km travelled: {km_travelled}')
 
 
@@ -208,12 +210,12 @@ class DecisionMakingEnv(AbstractEnv):
         
         # print(f"\ndistance to td reward {self.config['distance_reward'] * km_travelled}")
 
-        collision_index = int(utils.lmap(abs(self.steps - self.config['duration']), [0,self.config['duration']], [3,0]))
+        # collision_index = int(utils.lmap(abs(self.steps - self.config['duration']), [0,self.config['duration']], [3,0]))
         # print(collision_index)
 
         # Use forward speed rather than speed, see https://github.com/eleurent/highway-env/issues/268
-        # forward_speed = self.vehicle.speed * np.cos(self.vehicle.heading)
-        # scaled_speed = utils.lmap(forward_speed, self.config["reward_speed_range"], [0, 1])
+        forward_speed = self.vehicle.speed * np.cos(self.vehicle.heading)
+        scaled_speed = utils.lmap(forward_speed, self.config["reward_speed_range"], [0, 1])
 
         # print(f'dist rew: {self.config["distance_reward"] * km_travelled}')
         # print(f'nrl rew: {self.config["not_in_right_lane_reward"] * (1 - (lane / max(len(neighbours) - 1, 1)))} driving in lane: {lane}')
@@ -222,15 +224,17 @@ class DecisionMakingEnv(AbstractEnv):
         # COL_REWARDS[collision_index]
 
         reward = self.config["collision_reward"] * self.vehicle.crashed \
-            + self.config["distance_to_tv_reward"] * speed_diff \
-            + self.config["not_in_right_lane_reward"] * (1 - (lane / max(len(neighbours) - 1, 1))) \
-            + self.config["distance_reward"] * km_travelled
-          # + self.config["high_speed_reward"] * np.clip(scaled_speed, 0, 1)
+            + self.config["high_speed_reward"] * np.clip(scaled_speed, 0, 1)
+
+            # + self.config["distance_reward"] * km_travelled
+
+            # + self.config["distance_to_tv_reward"] * speed_diff \
+            # + self.config["not_in_right_lane_reward"] * (1 - (lane / max(len(neighbours) - 1, 1))) \
  
-        # reward = utils.lmap(reward,
-        #                   [self.config["distance_to_tv_reward"],
-        #                    self.config["not_in_right_lane_reward"]],
-        #                   [0, 1])
+        reward = utils.lmap(reward,
+                          [self.config["collision_reward"],
+                           self.config["high_speed_reward"]],
+                          [0, 1])
 
         reward = 0 if not self.vehicle.on_road else reward
         # print(f"\nreward: {reward}, \ndense rewards:\n\ttarget velocity reward: {self.config['distance_to_tv_reward'] * speed_diff},\n\tnot in RL reward:{self.config['not_in_right_lane_reward'] * (1 - (lane / max(len(neighbours) - 1, 1)))},\n\tduration reward: {self.config['distance_reward'] * km_travelled} \
