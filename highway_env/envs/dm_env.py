@@ -40,10 +40,10 @@ class DecisionMakingEnv(AbstractEnv):
                 "type": "DecisionMakingAction",
             },
             "screen_width": 1250,
-            "lanes_count": 3,
-            "vehicles_count": 35, # curriculum learning su lanes e npc-vehicles
+            "lanes_count": 2,
+            "vehicles_count": 1, # curriculum learning su lanes e npc-vehicles
             "controlled_vehicles": 1,
-            "initial_lane_id": None,
+            "initial_lane_id": 1,
             "duration": 120,  # [s]
             "ego_spacing": 1,
             "vehicles_density": 0.7,
@@ -117,7 +117,7 @@ class DecisionMakingEnv(AbstractEnv):
                 aux = random.choices(range(0,self.config['lanes_count']), weights = vehicle_distribution, k=1)[0]
                 # vehicle = other_vehicles_type.create_random(self.road, lane_id=self.config["npc_initial_lane_id"], spacing=1 / self.config["vehicles_density"])
                 vehicle = other_vehicles_type.create_random(self.road, speed = self.get_npc_speed(aux,range(0,self.config['lanes_count'])),\
-                    lane_id = aux, spacing=1 / self.config["vehicles_density"]) #edit NPC
+                    lane_id = 1, spacing=1 / self.config["vehicles_density"]) #edit NPC
                 vehicle.randomize_behavior()
                 self.road.vehicles.append(vehicle)
 
