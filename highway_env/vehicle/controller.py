@@ -376,7 +376,7 @@ class DecisionMakingVehicle(MDPVehicle):
     """An MDP vehicle which performs high-level decision making actions."""
 
     MAX_SPEED = 36 # m/s
-    TTG = 2
+    TTG = 1
     FAR_TIME = 5
 
     def __init__(self,
@@ -589,17 +589,17 @@ class DecisionMakingVehicle(MDPVehicle):
             phy_steering = 0.0
             self.phy_action = {"steering": phy_steering, "acceleration": phy_acceleration}
             
-            f = open(r'C:\Users\luka-\Desktop\ACC_data.csv', 'a')
+            # f = open(r'C:\Users\luka-\Desktop\ACC_data.csv', 'a')
 
-            if(self.front_vehicle):
-                f.write(str(self.speed) + "," + str(self.front_vehicle.speed) + "," \
-                + str(self.phy_action['acceleration']) + "," \
-                + str(self.front_vehicle.position[0] - self.position[0]) + "," + str(self.time_gap_error(self.TTG, self, self.front_vehicle)) + "," + str(time.perf_counter()) +"\n")
+            # if(self.front_vehicle):
+            #     f.write(str(self.speed) + "," + str(self.front_vehicle.speed) + "," \
+            #     + str(self.phy_action['acceleration']) + "," \
+            #     + str(self.front_vehicle.position[0] - self.position[0]) + "," + str(self.time_gap_error(self.TTG, self, self.front_vehicle)) + "," + str(time.perf_counter()) +"\n")
 
-            else:
-                f.write("\n"+ str(self.speed) + "," + str(0) + "," \
-                + str(self.phy_action['acceleration']) + "," \
-                + str(0) + "," + str(0) + "," + str(time.perf_counter()))
+            # else:
+            #     f.write("\n"+ str(self.speed) + "," + str(0) + "," \
+            #     + str(self.phy_action['acceleration']) + "," \
+            #     + str(0) + "," + str(0) + "," + str(time.perf_counter()))
                 
 
         elif(action == "OVERTAKE"):
