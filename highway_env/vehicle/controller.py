@@ -376,7 +376,7 @@ class DecisionMakingVehicle(MDPVehicle):
     """An MDP vehicle which performs high-level decision making actions."""
 
     MAX_SPEED = 36 # m/s
-    TTG = 2
+    TTG = 1
     FAR_TIME = 5
 
     def __init__(self,

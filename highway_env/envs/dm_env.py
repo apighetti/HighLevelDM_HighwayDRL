@@ -192,7 +192,7 @@ class DecisionMakingEnv(AbstractEnv):
         # else:
         #     not_in_rl = 0
 
-        # speed_diff = utils.lmap((36 - self.vehicle.speed), [0,36] , [0,1])
+        speed_diff = utils.lmap((36 - self.vehicle.speed), [0,36] , [0,1])
 
         # duration_diff = utils.lmap((self.config['duration'] - self.steps), [self.config['duration'],0], [0,1])
         # self.TOTAL_SPACE += abs(self.vehicle.speed*(self.steps - self.LAST_STEPS))
