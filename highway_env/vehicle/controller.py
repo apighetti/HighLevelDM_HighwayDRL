@@ -360,7 +360,7 @@ class PID:
         d_error = (error - self.prev_error)/(t_m-self.last_time)
         i_error= self.integral_error + error*(t_m-self.last_time)
         t = self.K_P * error + self.K_D * d_error + self.K_I * i_error
-        print(t_m-self.last_time)
+        # print(t_m-self.last_time)
         self.prev_error = error 
         self.integral_error = i_error
         self.last_time = t_m
@@ -608,7 +608,7 @@ class DecisionMakingVehicle(MDPVehicle):
                then it will perform a left overtake.  '''
 
             curr_lane_index = self.lane_index
-            phy_acceleration = self.physical_validity_modifier(target_speed=self.MAX_SPEED, is_overtaking=True)
+            phy_acceleration = self.physical_validity_modifier()
             self.throttle = phy_acceleration
             self.phy_action = {"steering": 0.0, "acceleration": phy_acceleration}
 
