@@ -53,7 +53,7 @@ class DecisionMakingEnv(AbstractEnv):
             # "distance_to_tv_reward": -0.01,      # -0.015 // non basta come incentivo alla velocità
             # "decision_change_reward": -0.25,   // NOT IMPLEMENTED YET
             # "distance_reward": 0.08,
-            "high_speed_reward": 0.08,        # The reward received when driving at full speed, linearly mapped to zero for
+            "high_speed_reward": 0.3,        # The reward received when driving at full speed, linearly mapped to zero for
                                                  # lower speeds according to config["reward_speed_range"].
             # "lane_change_reward": -0.005,      # The reward received at each lane change action.
             "reward_speed_range": [30, 36],
@@ -65,9 +65,9 @@ class DecisionMakingEnv(AbstractEnv):
         w = self.vehicles_distribution()
         self._create_road()
         self._create_vehicles(w)
-        # f = open(r'/Users/fornerispighetti/HighwayDRL/highway_env/ACC_data.csv', 'a')
-        # f.write("ego_speed,front_vehicle_speed,throttle,distance,gap,counter" + "\n")
-        # f.close()
+        f = open(r'C:\Users\luka-\Desktop\ACC_data.csv', 'a')
+        f.write("ego_speed,front_vehicle_speed,throttle,distance,gap,counter" + "\n")
+        f.close()
 
     def _create_road(self) -> None:
         """Create a road composed of straight adjacent lanes."""
