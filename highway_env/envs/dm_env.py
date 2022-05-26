@@ -41,11 +41,7 @@ class DecisionMakingEnv(AbstractEnv):
             },
             "screen_width": 1250,
             "lanes_count": 2,
-<<<<<<< HEAD
             "vehicles_count": 1, # curriculum learning su lanes e npc-vehicles
-=======
-            "vehicles_count": 5, # curriculum learning su lanes e npc-vehicles
->>>>>>> 33da16e0f4624074cd4a348876f4c32d3966263c
             "controlled_vehicles": 1,
             "initial_lane_id": 1,
             "duration": 120,  # [s]
@@ -120,13 +116,8 @@ class DecisionMakingEnv(AbstractEnv):
             for i in range(others):
                 aux = random.choices(range(0,self.config['lanes_count']), weights = vehicle_distribution, k=1)[0]
                 # vehicle = other_vehicles_type.create_random(self.road, lane_id=self.config["npc_initial_lane_id"], spacing=1 / self.config["vehicles_density"])
-<<<<<<< HEAD
                 vehicle = other_vehicles_type.create_random(self.road, speed = self.get_npc_speed(aux,range(0,self.config['lanes_count'])),\
-                    lane_id = aux, spacing=3 / self.config["vehicles_density"]) #edit NPC
-=======
-                vehicle = other_vehicles_type.create_random(self.road, speed = 24,\
-                    lane_id = 1, spacing=8 / self.config["vehicles_density"]) #edit NPC
->>>>>>> 33da16e0f4624074cd4a348876f4c32d3966263c
+                    lane_id = aux, spacing=8 / self.config["vehicles_density"]) #edit NPC
                 vehicle.randomize_behavior()
                 self.road.vehicles.append(vehicle)
 
