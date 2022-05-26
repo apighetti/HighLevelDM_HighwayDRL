@@ -360,7 +360,7 @@ class PID:
         d_error = (error - self.prev_error)/(t_m-self.last_time)
         i_error= self.integral_error + error*(t_m-self.last_time)
         t = self.K_P * error + self.K_D * d_error + self.K_I * i_error
-        print(t_m-self.last_time)
+        # print(t_m-self.last_time)
         self.prev_error = error 
         self.integral_error = i_error
         self.last_time = t_m
@@ -589,17 +589,17 @@ class DecisionMakingVehicle(MDPVehicle):
             phy_steering = 0.0
             self.phy_action = {"steering": phy_steering, "acceleration": phy_acceleration}
             
-            f = open(r'C:\Users\luka-\Desktop\ACC_data.csv', 'a')
+            # f = open(r'C:\Users\luka-\Desktop\ACC_data.csv', 'a')
 
-            if(self.front_vehicle):
-                f.write(str(self.speed) + "," + str(self.front_vehicle.speed) + "," \
-                + str(self.phy_action['acceleration']) + "," \
-                + str(self.front_vehicle.position[0] - self.position[0]) + "," + str(self.time_gap_error(self.TTG, self, self.front_vehicle)) + "," + str(time.perf_counter()) +"\n")
+            # if(self.front_vehicle):
+            #     f.write(str(self.speed) + "," + str(self.front_vehicle.speed) + "," \
+            #     + str(self.phy_action['acceleration']) + "," \
+            #     + str(self.front_vehicle.position[0] - self.position[0]) + "," + str(self.time_gap_error(self.TTG, self, self.front_vehicle)) + "," + str(time.perf_counter()) +"\n")
 
-            else:
-                f.write("\n"+ str(self.speed) + "," + str(0) + "," \
-                + str(self.phy_action['acceleration']) + "," \
-                + str(0) + "," + str(0) + "," + str(time.perf_counter()))
+            # else:
+            #     f.write("\n"+ str(self.speed) + "," + str(0) + "," \
+            #     + str(self.phy_action['acceleration']) + "," \
+            #     + str(0) + "," + str(0) + "," + str(time.perf_counter()))
                 
 
         elif(action == "OVERTAKE"):
@@ -608,7 +608,7 @@ class DecisionMakingVehicle(MDPVehicle):
                then it will perform a left overtake.  '''
 
             curr_lane_index = self.lane_index
-            phy_acceleration = self.physical_validity_modifier(target_speed=self.MAX_SPEED, is_overtaking=True)
+            phy_acceleration = self.physical_validity_modifier()
             self.throttle = phy_acceleration
             self.phy_action = {"steering": 0.0, "acceleration": phy_acceleration}
 

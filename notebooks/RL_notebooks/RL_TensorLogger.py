@@ -18,10 +18,9 @@ class MetricsCallback(BaseCallback):
 
     def _on_step(self):
         # Plot values (here a random variable)
-
         figure = plt.figure()
         figure.add_subplot().plot(np.random.random(3))
         # Close the figure after logging it
-        self.logger.record("trajectory/figure", Figure(figure, close=True), exclude=("stdout", "log", "json", "csv"))
+        self.logger.record("metrics/ego_speed", )
         plt.close()
         return True
