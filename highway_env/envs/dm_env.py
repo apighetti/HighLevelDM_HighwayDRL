@@ -116,8 +116,8 @@ class DecisionMakingEnv(AbstractEnv):
             for i in range(others):
                 aux = random.choices(range(0,self.config['lanes_count']), weights = vehicle_distribution, k=1)[0]
                 # vehicle = other_vehicles_type.create_random(self.road, lane_id=self.config["npc_initial_lane_id"], spacing=1 / self.config["vehicles_density"])
-                vehicle = other_vehicles_type.create_random(self.road, speed = self.get_npc_speed(aux,range(0,self.config['lanes_count'])),\
-                    lane_id = aux, spacing=8 / self.config["vehicles_density"]) #edit NPC
+                vehicle = other_vehicles_type.create_random(self.road, speed = 24,\
+                    lane_id = 1, spacing=8 / self.config["vehicles_density"]) #edit NPC // speed = self.get_npc_speed(aux,range(0,self.config['lanes_count'])
                 vehicle.randomize_behavior()
                 self.road.vehicles.append(vehicle)
 
@@ -179,9 +179,9 @@ class DecisionMakingEnv(AbstractEnv):
         :param action: the last action performed
         :return: the corresponding reward
         """
-        # neighbours = self.road.network.all_side_lanes(self.vehicle.lane_index)
-        # lane = self.vehicle.target_lane_index[2] if isinstance(self.vehicle, ControlledVehicle) \
-        #     else self.vehicle.lane_index[2]
+        neighbours = self.road.network.all_side_lanes(self.vehicle.lane_index)
+        lane = self.vehicle.target_lane_index[2] if isinstance(self.vehicle, ControlledVehicle) \
+            else self.vehicle.lane_index[2]
         
 
         # lanes_count = len(self.road.network.lanes_list())
@@ -224,15 +224,15 @@ class DecisionMakingEnv(AbstractEnv):
         # COL_REWARDS[collision_index]
 
         reward = self.config["collision_reward"] * self.vehicle.crashed \
+            + self.config["not_in_right_lane_reward"] * (1 - (lane / max(len(neighbours) - 1, 1))) \
             + self.config["distance_to_tv_reward"] * speed_diff \
             + self.config["high_speed_reward"] * np.clip(scaled_speed, 0, 1)
 
             # + self.config["distance_reward"] * km_travelled
 
-            # + self.config["not_in_right_lane_reward"] * (1 - (lane / max(len(neighbours) - 1, 1))) \
  
         reward = utils.lmap(reward,
-                          [self.config["collision_reward"] + self.config["distance_to_tv_reward"],
+                          [self.config["collision_reward"] + self.config["distance_to_tv_reward"] + self.config["not_in_right_lane_reward"],
                            self.config["high_speed_reward"]],
                           [0, 1])
 
