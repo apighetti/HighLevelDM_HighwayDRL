@@ -39,13 +39,13 @@ class DecisionMakingEnv(AbstractEnv):
             "action": {
                 "type": "DecisionMakingAction",
             },
-            "lanes_count": 2,
-            "vehicles_count": 10, # curriculum learning su lanes e npc-vehicles
+            "lanes_count": 6,
+            "vehicles_count": 30, # curriculum learning su lanes e npc-vehicles
             "controlled_vehicles": 1,
             "initial_lane_id": None,
             "duration": 120,  # [s]
             "ego_spacing": 1,
-            "vehicles_density": 0.7,
+            "vehicles_density": 1.5,
             "collision_reward": -0.5,            # The reward received when colliding with a vehicle.
             "not_in_right_lane_reward": -5,  # The reward received when driving on the right-most lanes, linearly mapped to
             #                                      # zero for other lanes.
@@ -258,6 +258,6 @@ class DecisionMakingEnv(AbstractEnv):
         return float(self.vehicle.crashed)
 
 register(
-    id='dm-env-v0',
+    id='jam-dm-env-v0',
     entry_point='highway_env.envs:DecisionMakingEnv',
 )

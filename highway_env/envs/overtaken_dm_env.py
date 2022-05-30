@@ -39,7 +39,7 @@ class DecisionMakingEnv(AbstractEnv):
             "action": {
                 "type": "DecisionMakingAction",
             },
-            "lanes_count": 2,
+            "lanes_count": 5,
             "vehicles_count": 10, # curriculum learning su lanes e npc-vehicles
             "controlled_vehicles": 1,
             "initial_lane_id": None,
@@ -258,6 +258,6 @@ class DecisionMakingEnv(AbstractEnv):
         return float(self.vehicle.crashed)
 
 register(
-    id='dm-env-v0',
+    id='overtaken-dm-env-v0',
     entry_point='highway_env.envs:DecisionMakingEnv',
 )

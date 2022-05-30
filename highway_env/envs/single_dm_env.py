@@ -258,6 +258,6 @@ class DecisionMakingEnv(AbstractEnv):
         return float(self.vehicle.crashed)
 
 register(
-    id='dm-env-v0',
+    id='single-dm-env-v0',
     entry_point='highway_env.envs:DecisionMakingEnv',
 )
