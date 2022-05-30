@@ -39,9 +39,8 @@ class DecisionMakingEnv(AbstractEnv):
             "action": {
                 "type": "DecisionMakingAction",
             },
-            "screen_width": 1250,
-            "lanes_count": 3,
-            "vehicles_count": 10, # curriculum learning su lanes e npc-vehicles
+            "lanes_count": 2,
+            "vehicles_count": 5, # curriculum learning su lanes e npc-vehicles
             "controlled_vehicles": 1,
             "initial_lane_id": None,
             "duration": 120,  # [s]
@@ -192,7 +191,7 @@ class DecisionMakingEnv(AbstractEnv):
         # else:
         #     not_in_rl = 0
 
-        speed_diff = utils.lmap((36 - self.vehicle.speed), [0,36] , [0,1])
+        # speed_diff = utils.lmap((36 - self.vehicle.speed), [0,36] , [0,1])
 
         # duration_diff = utils.lmap((self.config['duration'] - self.steps), [self.config['duration'],0], [0,1])
         # self.TOTAL_SPACE += abs(self.vehicle.speed*(self.steps - self.LAST_STEPS))
@@ -227,6 +226,7 @@ class DecisionMakingEnv(AbstractEnv):
             + self.config["not_in_right_lane_reward"] * (1 - (lane / max(len(neighbours) - 1, 1))) \
             + self.config["high_speed_reward"] * np.clip(scaled_speed, 0, 1)
 
+            # + self.config["distance_to_tv_reward"] * speed_diff \
             # + self.config["distance_reward"] * km_travelled
             # + self.config["distance_to_tv_reward"] * speed_diff \
 
