@@ -695,7 +695,6 @@ class DecisionMakingVehicle(MDPVehicle):
              self.tactical_dm("OVERTAKE")
         elif(self.rml_flag):
             self.tactical_dm("RIGHTMOSTLANE")        
-
         super().step(dt)
 
     def predict_trajectory(self, actions: List, action_duration: float, trajectory_timestep: float, dt: float) \

@@ -39,9 +39,9 @@ class OVTKDecisionMakingEnv(AbstractEnv):
             "action": {
                 "type": "DecisionMakingAction",
             },
-            "other_vehicles_type": "highway_env.vehicle.behavior.AggressiveVehicle",
-            "lanes_count": 3,
-            "vehicles_count": 10, # curriculum learning su lanes e npc-vehicles
+            # "other_vehicles_type": "highway_env.vehicle.behavior.AggressiveVehicle",
+            "lanes_count": 2,
+            "vehicles_count": 1,
             "controlled_vehicles": 1,
             "initial_lane_id": 1,
             "duration": 120,  # [s]
@@ -112,9 +112,9 @@ class OVTKDecisionMakingEnv(AbstractEnv):
 
             for i in range(others):
                 aux = random.choices(range(0,self.config['lanes_count']), weights = vehicle_distribution, k=1)[0]
-                # vehicle = other_vehicles_type.create_random(self.road, lane_id=self.config["npc_initial_lane_id"], spacing=1 / self.config["vehicles_density"]) // self.get_npc_speed(aux,range(0,self.config['lanes_count']))
-                vehicle = other_vehicles_type.create_random(self.road, speed = self.get_npc_speed(aux),\
-                    lane_id = aux, spacing=1 / self.config["vehicles_density"]) #edit NPC
+                # vehicle = other_vehicles_type.create_random(self.road, lane_id=self.config["npc_initial_lane_id"], spacing=1 / self.config["vehicles_density"]) // self.get_npc_speed(aux))
+                vehicle = other_vehicles_type.create_random(self.road, speed = 45,\
+                    lane_id = 1, spacing=1 / self.config["vehicles_density"]) #edit NPC
                 vehicle.randomize_behavior()
                 self.road.vehicles.append(vehicle)
 
@@ -223,6 +223,7 @@ class OVTKDecisionMakingEnv(AbstractEnv):
         reward = self.config["collision_reward"] * self.vehicle.crashed \
             + self.config["not_in_right_lane_reward"] * (1 - (lane / max(len(neighbours) - 1, 1))) \
             + self.config["high_speed_reward"] * np.clip(scaled_speed, 0, 1)
+            
 
             # + self.config["distance_to_tv_reward"] * speed_diff \
             # + self.config["distance_reward"] * km_travelled
