@@ -376,7 +376,7 @@ class DecisionMakingVehicle(MDPVehicle):
     """An MDP vehicle which performs high-level decision making actions."""
 
     MAX_SPEED = 36 # m/s
-    TTG = 1
+    TTG = 2
     FAR_TIME = 5
 
     def __init__(self,
@@ -439,7 +439,7 @@ class DecisionMakingVehicle(MDPVehicle):
             if(not self.acc_flag):
                 self.acc_flag = True
                 self.current_action = "ACC"
-                print("ACC ON")
+                # print("ACC ON")
                         
         elif action == "OVERTAKE":
             # print("\nOVRTK")
@@ -451,7 +451,7 @@ class DecisionMakingVehicle(MDPVehicle):
                 self.overtake_flag = True
                 self.my_lane = self.lane_index[2] - 1
                 self.current_action = "OVERTAKE"
-                print("OVERTAKE ON")
+                # print("OVERTAKE ON")
 
         elif action == "RIGHTMOSTLANE":
             # print("\nRML")
@@ -465,7 +465,7 @@ class DecisionMakingVehicle(MDPVehicle):
                 self.phy_action = None
                 self.current_action = "RML"
                 # self.my_lane = self.lane_index[2] + 1
-                print("RIGHTMOSTLANE ON")
+                # print("RIGHTMOSTLANE ON")
         else:
             super().act(action)
             return
@@ -524,13 +524,13 @@ class DecisionMakingVehicle(MDPVehicle):
             throttle = -5
         return throttle
 
-    def physical_validity_modifier(self):
+    def physical_validity_modifier(self, overtake = False):
         # print(target_time_gap)
         
         time_error = self.time_gap_error(self.TTG, self, self.front_vehicle)
         target_speed = self.MAX_SPEED
         
-        if time_error is not None and time_error < self.FAR_TIME:
+        if time_error is not None and time_error < self.FAR_TIME and not overtake:
             target_speed = self.speed * (1 + (self.pid_time.get_value(None, None, time_error)/self.FAR_TIME))
             target_speed = self.MAX_SPEED if target_speed > self.MAX_SPEED else target_speed
         
@@ -608,7 +608,7 @@ class DecisionMakingVehicle(MDPVehicle):
                then it will perform a left overtake.  '''
 
             curr_lane_index = self.lane_index
-            phy_acceleration = self.physical_validity_modifier()
+            phy_acceleration = self.physical_validity_modifier(overtake=True)
             self.throttle = phy_acceleration
             self.phy_action = {"steering": 0.0, "acceleration": phy_acceleration}
 

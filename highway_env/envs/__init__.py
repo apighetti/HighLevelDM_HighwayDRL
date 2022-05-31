@@ -3,7 +3,8 @@ from highway_env.envs.dm_env import *
 from highway_env.envs.acc_dm_env import *
 from highway_env.envs.jam_dm_env import *
 from highway_env.envs.overtaken_dm_env import *
-from highway_env.envs.single_dm_env import *
+from highway_env.envs.singleO_dm_env import *
+from highway_env.envs.multipleO_dm_env import *
 from highway_env.envs.merge_env import *
 from highway_env.envs.parking_env import *
 from highway_env.envs.summon_env import *

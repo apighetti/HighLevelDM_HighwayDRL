@@ -16,7 +16,7 @@ from highway_env.vehicle.objects import LaneIndex
 # COL_REWARDS = [-0.5, -1, -3, -5] # ordini di grandezza differenti
 # COL_REWARDS = [-3, -2.5, -2, -1.5] # ZZ try
 
-class DecisionMakingEnv(AbstractEnv):
+class OVTKDecisionMakingEnv(AbstractEnv):
     """
     A highway driving environment.
 
@@ -39,10 +39,11 @@ class DecisionMakingEnv(AbstractEnv):
             "action": {
                 "type": "DecisionMakingAction",
             },
-            "lanes_count": 5,
+            "other_vehicles_type": "highway_env.vehicle.behavior.AggressiveVehicle",
+            "lanes_count": 3,
             "vehicles_count": 10, # curriculum learning su lanes e npc-vehicles
             "controlled_vehicles": 1,
-            "initial_lane_id": None,
+            "initial_lane_id": 1,
             "duration": 120,  # [s]
             "ego_spacing": 1,
             "vehicles_density": 0.7,
@@ -86,13 +87,10 @@ class DecisionMakingEnv(AbstractEnv):
             
         return weights
     
-    def get_npc_speed(self, aux, sequence):
+    def get_npc_speed(self, aux):
         '''Compute speed of a spawned vehicle according to its position.'''
         
-        if aux == 0:
-            aux = 1
-            
-        speed = (25 + 3*sequence[-aux])
+        speed = utils.lmap(aux, [0, self.config['lanes_count']], [36, 20])
         return speed
 
     def _create_vehicles(self, vehicle_distribution) -> None:
@@ -115,7 +113,7 @@ class DecisionMakingEnv(AbstractEnv):
             for i in range(others):
                 aux = random.choices(range(0,self.config['lanes_count']), weights = vehicle_distribution, k=1)[0]
                 # vehicle = other_vehicles_type.create_random(self.road, lane_id=self.config["npc_initial_lane_id"], spacing=1 / self.config["vehicles_density"]) // self.get_npc_speed(aux,range(0,self.config['lanes_count']))
-                vehicle = other_vehicles_type.create_random(self.road, speed = self.get_npc_speed(aux,range(0,self.config['lanes_count'])),\
+                vehicle = other_vehicles_type.create_random(self.road, speed = self.get_npc_speed(aux),\
                     lane_id = aux, spacing=1 / self.config["vehicles_density"]) #edit NPC
                 vehicle.randomize_behavior()
                 self.road.vehicles.append(vehicle)
@@ -259,5 +257,5 @@ class DecisionMakingEnv(AbstractEnv):
 
 register(
     id='overtaken-dm-env-v0',
-    entry_point='highway_env.envs:DecisionMakingEnv',
+    entry_point='highway_env.envs:OVTKDecisionMakingEnv',
 )

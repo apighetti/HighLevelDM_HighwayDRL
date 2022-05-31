@@ -224,7 +224,6 @@ class IDMVehicle(ControlledVehicle):
         :param lane_index: the candidate lane for the change
         :return: whether the lane change should be performed
         """
-        # return False
         if lane_index[2] == 0:
             t = range(1, 5000)
             h = random.choice(t)

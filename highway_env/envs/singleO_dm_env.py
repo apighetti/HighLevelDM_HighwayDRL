@@ -16,7 +16,7 @@ from highway_env.vehicle.objects import LaneIndex
 # COL_REWARDS = [-0.5, -1, -3, -5] # ordini di grandezza differenti
 # COL_REWARDS = [-3, -2.5, -2, -1.5] # ZZ try
 
-class JAMDecisionMakingEnv(AbstractEnv):
+class SingleOvertakeDecisionMakingEnv(AbstractEnv):
     """
     A highway driving environment.
 
@@ -39,20 +39,20 @@ class JAMDecisionMakingEnv(AbstractEnv):
             "action": {
                 "type": "DecisionMakingAction",
             },
-            "lanes_count": 3,
-            "vehicles_count": 35, # curriculum learning su lanes e npc-vehicles
+            "lanes_count": 2,
+            "vehicles_count": 1, # curriculum learning su lanes e npc-vehicles
             "controlled_vehicles": 1,
-            "initial_lane_id": None,
+            "initial_lane_id": 1,
             "duration": 120,  # [s]
             "ego_spacing": 1,
-            "vehicles_density": 2,
+            "vehicles_density": 0.5,
             "collision_reward": -0.5,            # The reward received when colliding with a vehicle.
-            "not_in_right_lane_reward": -0.55,  # The reward received when driving on the right-most lanes, linearly mapped to
+            "not_in_right_lane_reward": -0.45,  # The reward received when driving on the right-most lanes, linearly mapped to
             #                                      # zero for other lanes.
             # "distance_to_tv_reward": -0.4,      # -0.015 // non basta come incentivo alla velocità
             # "decision_change_reward": -0.25,   // NOT IMPLEMENTED YET
             # "distance_reward": 0.08,
-            "high_speed_reward": 0.6,        # The reward received when driving at full speed, linearly mapped to zero for
+            "high_speed_reward": 0.4,        # The reward received when driving at full speed, linearly mapped to zero for
                                                  # lower speeds according to config["reward_speed_range"].
             # "lane_change_reward": -0.005,      # The reward received at each lane change action.
             "reward_speed_range": [30, 36],
@@ -61,8 +61,7 @@ class JAMDecisionMakingEnv(AbstractEnv):
         return config
 
     def _reset(self) -> None:
-        # w = self.vehicles_distribution()
-        w = [10, 50, 100]
+        w = self.vehicles_distribution()
         self._create_road()
         self._create_vehicles(w)
         # f = open(r'C:\Users\luka-\Desktop\ACC_data.csv', 'a')
@@ -109,11 +108,12 @@ class JAMDecisionMakingEnv(AbstractEnv):
             vehicle = self.action_type.vehicle_class(self.road, vehicle.position, vehicle.heading, vehicle.speed)
             self.controlled_vehicles.append(vehicle)
             self.road.vehicles.append(vehicle)
+
             for i in range(others):
                 aux = random.choices(range(0,self.config['lanes_count']), weights = vehicle_distribution, k=1)[0]
                 # vehicle = other_vehicles_type.create_random(self.road, lane_id=self.config["npc_initial_lane_id"], spacing=1 / self.config["vehicles_density"]) // self.get_npc_speed(aux,range(0,self.config['lanes_count']))
                 vehicle = other_vehicles_type.create_random(self.road, speed = self.get_npc_speed(aux),\
-                    lane_id = aux, spacing=1 / self.config["vehicles_density"]) #edit NPC
+                    lane_id = 1, spacing=1 / self.config["vehicles_density"]) #edit NPC
                 vehicle.randomize_behavior()
                 self.road.vehicles.append(vehicle)
 
@@ -225,6 +225,7 @@ class JAMDecisionMakingEnv(AbstractEnv):
 
             # + self.config["distance_to_tv_reward"] * speed_diff \
             # + self.config["distance_reward"] * km_travelled
+            # + self.config["distance_to_tv_reward"] * speed_diff \
 
         reward = utils.lmap(reward,
                           [self.config["collision_reward"] + self.config["not_in_right_lane_reward"],
@@ -254,6 +255,6 @@ class JAMDecisionMakingEnv(AbstractEnv):
         return float(self.vehicle.crashed)
 
 register(
-    id='jam-dm-env-v0',
-    entry_point='highway_env.envs:JAMDecisionMakingEnv',
+    id='singleO-dm-env-v0',
+    entry_point='highway_env.envs:SingleOvertakeDecisionMakingEnv',
 )
