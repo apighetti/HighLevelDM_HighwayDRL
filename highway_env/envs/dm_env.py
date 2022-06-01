@@ -39,15 +39,15 @@ class DecisionMakingEnv(AbstractEnv):
             "action": {
                 "type": "DecisionMakingAction",
             },
-            "lanes_count": 2,
-            "vehicles_count": 5, # curriculum learning su lanes e npc-vehicles
+            "lanes_count": 3,
+            "vehicles_count": 10, # curriculum learning su lanes e npc-vehicles
             "controlled_vehicles": 1,
             "initial_lane_id": None,
             "duration": 120,  # [s]
             "ego_spacing": 1,
             "vehicles_density": 0.7,
             "collision_reward": -0.5,            # The reward received when colliding with a vehicle.
-            "not_in_right_lane_reward": -0.45,  # The reward received when driving on the right-most lanes, linearly mapped to
+            "not_in_right_lane_reward": -5,  # The reward received when driving on the right-most lanes, linearly mapped to
             #                                      # zero for other lanes.
             # "distance_to_tv_reward": -0.4,      # -0.015 // non basta come incentivo alla velocità
             # "decision_change_reward": -0.25,   // NOT IMPLEMENTED YET
@@ -61,7 +61,8 @@ class DecisionMakingEnv(AbstractEnv):
         return config
 
     def _reset(self) -> None:
-        w = self.vehicles_distribution()
+        # w = self.vehicles_distribution()
+        w = [20, 70, 140]
         self._create_road()
         self._create_vehicles(w)
         # f = open(r'C:\Users\luka-\Desktop\ACC_data.csv', 'a')
