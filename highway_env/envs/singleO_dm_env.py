@@ -56,7 +56,8 @@ class SingleOvertakeDecisionMakingEnv(AbstractEnv):
                                                  # lower speeds according to config["reward_speed_range"].
             # "lane_change_reward": -0.005,      # The reward received at each lane change action.
             "reward_speed_range": [30, 36],
-            "offroad_terminal": False
+            "offroad_terminal": False,
+            "enable_npc_lane_change": False
         })
         return config
 
@@ -71,7 +72,7 @@ class SingleOvertakeDecisionMakingEnv(AbstractEnv):
     def _create_road(self) -> None:
         """Create a road composed of straight adjacent lanes."""
         
-        self.road = Road(network=RoadNetwork.straight_road_network(self.config["lanes_count"], speed_limit=30),
+        self.road = Road(network=RoadNetwork.straight_road_network(self.config["lanes_count"], speed_limit=36),
                          np_random=self.np_random, record_history=self.config["show_trajectories"])
 
     def vehicles_distribution(self):
@@ -115,6 +116,7 @@ class SingleOvertakeDecisionMakingEnv(AbstractEnv):
                 vehicle = other_vehicles_type.create_random(self.road, speed = self.get_npc_speed(aux),\
                     lane_id = 1, spacing=1 / self.config["vehicles_density"]) #edit NPC
                 vehicle.randomize_behavior()
+                vehicle.enable_lane_change = self.config['enable_npc_lane_change']
                 self.road.vehicles.append(vehicle)
 
 

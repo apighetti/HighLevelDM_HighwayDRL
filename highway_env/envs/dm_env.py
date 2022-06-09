@@ -40,14 +40,14 @@ class DecisionMakingEnv(AbstractEnv):
                 "type": "DecisionMakingAction",
             },
             "lanes_count": 3,
-            "vehicles_count": 10, # curriculum learning su lanes e npc-vehicles
+            "vehicles_count": 35, # curriculum learning su lanes e npc-vehicles
             "controlled_vehicles": 1,
             "initial_lane_id": None,
             "duration": 120,  # [s]
             "ego_spacing": 1,
             "vehicles_density": 0.7,
             "collision_reward": -0.5,            # The reward received when colliding with a vehicle.
-            "not_in_right_lane_reward": -5,  # The reward received when driving on the right-most lanes, linearly mapped to
+            "not_in_right_lane_reward": -0.45,  # The reward received when driving on the right-most lanes, linearly mapped to
             #                                      # zero for other lanes.
             # "distance_to_tv_reward": -0.4,      # -0.015 // non basta come incentivo alla velocità
             # "decision_change_reward": -0.25,   // NOT IMPLEMENTED YET
@@ -72,7 +72,7 @@ class DecisionMakingEnv(AbstractEnv):
     def _create_road(self) -> None:
         """Create a road composed of straight adjacent lanes."""
         
-        self.road = Road(network=RoadNetwork.straight_road_network(self.config["lanes_count"], speed_limit=30),
+        self.road = Road(network=RoadNetwork.straight_road_network(self.config["lanes_count"], speed_limit=36),
                          np_random=self.np_random, record_history=self.config["show_trajectories"])
 
     def vehicles_distribution(self):
@@ -235,7 +235,7 @@ class DecisionMakingEnv(AbstractEnv):
         # print(f"\nreward: {reward}, \ndense rewards:\n\ttarget velocity reward: {self.config['distance_to_tv_reward'] * speed_diff},\n\tnot in RL reward:{self.config['not_in_right_lane_reward'] * (1 - (lane / max(len(neighbours) - 1, 1)))},\n\tduration reward: {self.config['distance_reward'] * km_travelled} \
         #     \nsparse rewards:\n\tcollision reward: {COL_REWARDS[collision_index]}")
 
-        # print(f"\nreward: {reward}, \ndense rewards:\n\tnot in RL reward:{self.config['not_in_right_lane_reward'] * (1 - (lane / max(len(neighbours) - 1, 1)))} \
+        # print(f"\nmapped overall reward: {reward}, \ndense rewards:\n\tnot in RL reward:{self.config['not_in_right_lane_reward'] * (1 - (lane / max(len(neighbours) - 1, 1)))}, \n\thigh speed reward: {self.config['high_speed_reward']}\
         #     \nsparse rewards:\n\tcollision reward: {self.config['collision_reward']}")
         return reward
 

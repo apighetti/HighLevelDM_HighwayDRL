@@ -47,7 +47,7 @@ class JAMDecisionMakingEnv(AbstractEnv):
             "ego_spacing": 1,
             "vehicles_density": 2,
             "collision_reward": -0.5,            # The reward received when colliding with a vehicle.
-            "not_in_right_lane_reward": -0.55,  # The reward received when driving on the right-most lanes, linearly mapped to
+            "not_in_right_lane_reward": -0.4,  # The reward received when driving on the right-most lanes, linearly mapped to
             #                                      # zero for other lanes.
             # "distance_to_tv_reward": -0.4,      # -0.015 // non basta come incentivo alla velocità
             # "decision_change_reward": -0.25,   // NOT IMPLEMENTED YET
@@ -72,7 +72,7 @@ class JAMDecisionMakingEnv(AbstractEnv):
     def _create_road(self) -> None:
         """Create a road composed of straight adjacent lanes."""
         
-        self.road = Road(network=RoadNetwork.straight_road_network(self.config["lanes_count"], speed_limit=30),
+        self.road = Road(network=RoadNetwork.straight_road_network(self.config["lanes_count"], speed_limit=36),
                          np_random=self.np_random, record_history=self.config["show_trajectories"])
 
     def vehicles_distribution(self):

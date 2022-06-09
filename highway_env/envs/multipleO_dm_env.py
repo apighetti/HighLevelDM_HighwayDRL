@@ -13,8 +13,12 @@ from highway_env.vehicle.kinematics import Vehicle
 from highway_env.vehicle.objects import LaneIndex
 
 # START_SEC = 120
-# COL_REWARDS = [-0.5, -1, -3, -5] # ordini di grandezza differenti
+COL_REWARDS = [0,-.1,-1] # ordini di grandezza differenti
 # COL_REWARDS = [-3, -2.5, -2, -1.5] # ZZ try
+
+SPACINGS = [1, 2, 3]
+
+NUM_NPCS = np.arange(6)
 
 class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
     """
@@ -24,9 +28,9 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
     staying on the rightmost lanes and avoiding collisions.
     """
 
-    LAST_STEPS = 1
-    TOTAL_SPACE = 0
-    LAST_VEHICLE_SPEED = 0
+    # LAST_STEPS = 1
+    # TOTAL_SPACE = 0
+    # LAST_VEHICLE_SPEED = 0
     # LAST_ACTION = ""
 
     @classmethod
@@ -40,23 +44,24 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
                 "type": "DecisionMakingAction",
             },
             "lanes_count": 2,
-            "vehicles_count": 5, # curriculum learning su lanes e npc-vehicles
+            # "vehicles_count": 5, # curriculum learning su lanes e npc-vehicles
             "controlled_vehicles": 1,
-            "initial_lane_id": 1,
+            "initial_lane_id": None,
             "duration": 120,  # [s]
             "ego_spacing": 1,
-            "vehicles_density": 0.5,
-            "collision_reward": -0.5,            # The reward received when colliding with a vehicle.
-            "not_in_right_lane_reward": -0.45,  # The reward received when driving on the right-most lanes, linearly mapped to
+            "vehicles_density": 0.7,
+            "collision_reward": -1,            # The reward received when colliding with a vehicle.
+            "not_in_right_lane_reward": -0.3,  # The reward received when driving on the right-most lanes, linearly mapped to
             #                                      # zero for other lanes.
-            # "distance_to_tv_reward": -0.4,      # -0.015 // non basta come incentivo alla velocità
+            # "distance_to_tv_reward": -0.3,      # -0.015 // non basta come incentivo alla velocità
             # "decision_change_reward": -0.25,   // NOT IMPLEMENTED YET
             # "distance_reward": 0.08,
-            "high_speed_reward": 0.4,        # The reward received when driving at full speed, linearly mapped to zero for
+            "high_speed_reward": 0.45,    #0.45    # The reward received when driving at full speed, linearly mapped to zero for
                                                  # lower speeds according to config["reward_speed_range"].
             # "lane_change_reward": -0.005,      # The reward received at each lane change action.
             "reward_speed_range": [30, 36],
-            "offroad_terminal": False
+            "offroad_terminal": False,
+            "enable_npc_lane_change": False
         })
         return config
 
@@ -71,7 +76,7 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
     def _create_road(self) -> None:
         """Create a road composed of straight adjacent lanes."""
         
-        self.road = Road(network=RoadNetwork.straight_road_network(self.config["lanes_count"], speed_limit=30),
+        self.road = Road(network=RoadNetwork.straight_road_network(self.config["lanes_count"], speed_limit=36),
                          np_random=self.np_random, record_history=self.config["show_trajectories"])
 
     def vehicles_distribution(self):
@@ -94,8 +99,11 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
 
     def _create_vehicles(self, vehicle_distribution) -> None:
         """Create some new random vehicles of a given type, and add them on the road."""
+        npcs_num = random.choice(NUM_NPCS)
+        sp = random.choice(SPACINGS)
+
         other_vehicles_type = utils.class_from_path(self.config["other_vehicles_type"])
-        other_per_controlled = near_split(self.config["vehicles_count"], num_bins=self.config["controlled_vehicles"])
+        other_per_controlled = near_split(npcs_num, num_bins=self.config["controlled_vehicles"])
 
         self.controlled_vehicles = []
         for others in other_per_controlled:
@@ -106,6 +114,7 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
                 spacing=self.config["ego_spacing"]
             )
             vehicle = self.action_type.vehicle_class(self.road, vehicle.position, vehicle.heading, vehicle.speed)
+            # print(f'Vehicle position: {vehicle.position}, vehicle type: {type(vehicle)}')
             self.controlled_vehicles.append(vehicle)
             self.road.vehicles.append(vehicle)
 
@@ -113,8 +122,10 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
                 aux = random.choices(range(0,self.config['lanes_count']), weights = vehicle_distribution, k=1)[0]
                 # vehicle = other_vehicles_type.create_random(self.road, lane_id=self.config["npc_initial_lane_id"], spacing=1 / self.config["vehicles_density"]) // self.get_npc_speed(aux,range(0,self.config['lanes_count']))
                 vehicle = other_vehicles_type.create_random(self.road, speed = self.get_npc_speed(aux),\
-                    lane_id = 1, spacing=1 / self.config["vehicles_density"]) #edit NPC
+                    lane_id = 1, spacing=sp / self.config["vehicles_density"]) #edit NPC
                 vehicle.randomize_behavior()
+                vehicle.enable_lane_change = self.config['enable_npc_lane_change']
+                # print(f'Vehicle position: {vehicle.position}, vehicle type: {type(vehicle)}')
                 self.road.vehicles.append(vehicle)
 
 
@@ -206,7 +217,7 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
         
         # print(f"\ndistance to td reward {self.config['distance_reward'] * km_travelled}")
 
-        # collision_index = int(utils.lmap(abs(self.steps - self.config['duration']), [0,self.config['duration']], [3,0]))
+        collision_index = int(utils.lmap(abs(self.steps - self.config['duration']), [0,self.config['duration']], [2,0]))
         # print(collision_index)
 
         # Use forward speed rather than speed, see https://github.com/eleurent/highway-env/issues/268
@@ -219,32 +230,33 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
         
         # COL_REWARDS[collision_index]
 
-        reward = self.config["collision_reward"] * self.vehicle.crashed \
-            + self.config["not_in_right_lane_reward"] * (1 - (lane / max(len(neighbours) - 1, 1))) \
-            + self.config["high_speed_reward"] * np.clip(scaled_speed, 0, 1)
+        reward = self.config["not_in_right_lane_reward"] * (1 - (lane / max(len(neighbours) - 1, 1))) \
+                + self.config["high_speed_reward"] * np.clip(scaled_speed, 0, 1)
 
             # + self.config["distance_to_tv_reward"] * speed_diff \
             # + self.config["distance_reward"] * km_travelled
+
             # + self.config["distance_to_tv_reward"] * speed_diff \
 
         reward = utils.lmap(reward,
-                          [self.config["collision_reward"] + self.config["not_in_right_lane_reward"],
+                          [self.config["not_in_right_lane_reward"],
                            self.config["high_speed_reward"]],
                           [0, 1])
-
+        reward += COL_REWARDS[collision_index] * self.vehicle.crashed
         reward = 0 if not self.vehicle.on_road else reward
         # print(f"\nreward: {reward}, \ndense rewards:\n\ttarget velocity reward: {self.config['distance_to_tv_reward'] * speed_diff},\n\tnot in RL reward:{self.config['not_in_right_lane_reward'] * (1 - (lane / max(len(neighbours) - 1, 1)))},\n\tduration reward: {self.config['distance_reward'] * km_travelled} \
         #     \nsparse rewards:\n\tcollision reward: {COL_REWARDS[collision_index]}")
 
-        # print(f"\nreward: {reward}, \ndense rewards:\n\tnot in RL reward:{self.config['not_in_right_lane_reward'] * (1 - (lane / max(len(neighbours) - 1, 1)))} \
+        # print(f"\nmapped overall reward: {reward}, \ndense rewards:\n\tnot in RL reward:{self.config['not_in_right_lane_reward'] * (1 - (lane / max(len(neighbours) - 1, 1)))},\
+        #     \n\thigh speed reward: {self.config['high_speed_reward']}\
         #     \nsparse rewards:\n\tcollision reward: {self.config['collision_reward']}")
         return reward
 
     def _is_terminal(self) -> bool:
         """The episode is over if the ego vehicle crashed or the time is out."""
-        self.LAST_STEPS = 1
-        self.TOTAL_SPACE = 0
-        self.LAST_VEHICLE_SPEED = 0
+        # self.LAST_STEPS = 1
+        # self.TOTAL_SPACE = 0
+        # self.LAST_VEHICLE_SPEED = 0
         # self.LAST_ACTION = ""
         return self.vehicle.crashed or \
             self.steps >= self.config["duration"] or \

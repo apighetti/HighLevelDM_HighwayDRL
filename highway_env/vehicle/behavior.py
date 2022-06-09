@@ -1,13 +1,14 @@
-from typing import Tuple, Union
+from typing import List, Tuple, Union, Optional
 
 import numpy as np
 import random
 
 from highway_env.road.road import Road, Route, LaneIndex
 from highway_env.utils import Vector
-from highway_env.vehicle.controller import ControlledVehicle
+from highway_env.vehicle.controller import ControlledVehicle, DecisionMakingVehicle
 from highway_env import utils
 from highway_env.vehicle.kinematics import Vehicle
+from highway_env.pid import PID
 
 
 class IDMVehicle(ControlledVehicle):
@@ -490,3 +491,63 @@ class DefensiveVehicle(LinearVehicle):
     ACCELERATION_PARAMETERS = [MERGE_ACC_GAIN / ((1 - MERGE_VEL_RATIO) * MERGE_TARGET_VEL),
                                MERGE_ACC_GAIN / (MERGE_VEL_RATIO * MERGE_TARGET_VEL),
                                2.0]
+
+class BurinoVehicle(DecisionMakingVehicle):
+    MAX_SPEED = 45
+
+    def __init__(self,
+                 road: Road,
+                 position: List[float],
+                 heading: float = 0,
+                 speed: float = 0,
+                 target_lane_index: Optional[LaneIndex] = None,
+                 target_speed: Optional[float] = None,
+                 target_speeds: Optional[Vector] = None,
+                 route: Optional[Route] = None,
+                 front_vehicle: Optional[Vehicle] = None,
+                 velocity_integral : Optional[float] = 0.0,
+                 prev_velocity : Optional[float] = 0.0,
+                 acc_flag: Optional[bool] = False,
+                 rml_flag: Optional[bool] = False,
+                 overtake_flag: Optional[bool] = False,
+                 throttle: Optional[float] = 0.0,
+                 timer: Optional[int] = 0,
+                 current_action: Optional[Union[dict, str]] = None,
+                 my_lane: Optional[int] = 0,
+                 step_index: Optional[int] = 0):
+        super().__init__(road, position, heading, speed, target_lane_index, target_speed, target_speeds, front_vehicle, velocity_integral, prev_velocity, acc_flag, rml_flag, overtake_flag, throttle,route,
+                            current_action, my_lane, timer)
+        self.step_index = step_index
+
+    def update_step_index(self):
+        curr_lane_index = self.lane_index
+        right_rear_vehicle = None
+        _, current_rear_vehicle = self.road.neighbour_vehicles(self, curr_lane_index)
+
+        if(curr_lane_index[2] == 0):
+            next_lane_index = (curr_lane_index[0], curr_lane_index[1], curr_lane_index[2] + 1)
+            _, right_rear_vehicle = self.road.neighbour_vehicles(self, next_lane_index)
+
+            if(right_rear_vehicle and (abs(right_rear_vehicle.position[0] - self.position[0]) > 20)):
+                index = 1
+            else:
+                index = 0
+        
+        else:
+            index = 0
+            if(current_rear_vehicle):
+                index = 2
+
+        return index           
+
+    def act(self, action: Union[dict, str] = None):
+        self.step_index = self.update_step_index()
+        if(self.step_index == 0):
+            action = "OVERTAKE"
+        if(self.step_index == 1):
+            action = "RIGHTMOSTLANE"
+            self.phy_action = None
+        if(self.step_index == 2):
+            action= "SLOWER"
+            self.phy_action = None
+        super().act(action)

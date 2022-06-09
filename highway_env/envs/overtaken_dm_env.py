@@ -39,16 +39,16 @@ class OVTKDecisionMakingEnv(AbstractEnv):
             "action": {
                 "type": "DecisionMakingAction",
             },
-            # "other_vehicles_type": "highway_env.vehicle.behavior.AggressiveVehicle",
+            "other_vehicles_type": "highway_env.vehicle.behavior.BurinoVehicle",
             "lanes_count": 2,
             "vehicles_count": 1,
             "controlled_vehicles": 1,
             "initial_lane_id": 1,
-            "duration": 120,  # [s]
+            "duration": 60,  # [s]
             "ego_spacing": 1,
             "vehicles_density": 0.7,
             "collision_reward": -0.5,            # The reward received when colliding with a vehicle.
-            "not_in_right_lane_reward": -5,  # The reward received when driving on the right-most lanes, linearly mapped to
+            "not_in_right_lane_reward": -0.45,  # The reward received when driving on the right-most lanes, linearly mapped to
             #                                      # zero for other lanes.
             # "distance_to_tv_reward": -0.4,      # -0.015 // non basta come incentivo alla velocità
             # "decision_change_reward": -0.25,   // NOT IMPLEMENTED YET
@@ -72,7 +72,7 @@ class OVTKDecisionMakingEnv(AbstractEnv):
     def _create_road(self) -> None:
         """Create a road composed of straight adjacent lanes."""
         
-        self.road = Road(network=RoadNetwork.straight_road_network(self.config["lanes_count"], speed_limit=30),
+        self.road = Road(network=RoadNetwork.straight_road_network(self.config["lanes_count"], speed_limit=36),
                          np_random=self.np_random, record_history=self.config["show_trajectories"])
 
     def vehicles_distribution(self):
@@ -97,7 +97,6 @@ class OVTKDecisionMakingEnv(AbstractEnv):
         """Create some new random vehicles of a given type, and add them on the road."""
         other_vehicles_type = utils.class_from_path(self.config["other_vehicles_type"])
         other_per_controlled = near_split(self.config["vehicles_count"], num_bins=self.config["controlled_vehicles"])
-
         self.controlled_vehicles = []
         for others in other_per_controlled:
             vehicle = Vehicle.create_random(
@@ -114,8 +113,8 @@ class OVTKDecisionMakingEnv(AbstractEnv):
                 aux = random.choices(range(0,self.config['lanes_count']), weights = vehicle_distribution, k=1)[0]
                 # vehicle = other_vehicles_type.create_random(self.road, lane_id=self.config["npc_initial_lane_id"], spacing=1 / self.config["vehicles_density"]) // self.get_npc_speed(aux))
                 vehicle = other_vehicles_type.create_random(self.road, speed = 45,\
-                    lane_id = 1, spacing=1 / self.config["vehicles_density"]) #edit NPC
-                vehicle.randomize_behavior()
+                    lane_id = self.config["initial_lane_id"], spacing=1 / self.config["vehicles_density"]) #edit NPC
+                vehicle.position = [60.0, 4.]
                 self.road.vehicles.append(vehicle)
 
 
@@ -213,7 +212,7 @@ class OVTKDecisionMakingEnv(AbstractEnv):
         # Use forward speed rather than speed, see https://github.com/eleurent/highway-env/issues/268
         forward_speed = self.vehicle.speed * np.cos(self.vehicle.heading)
         scaled_speed = utils.lmap(forward_speed, self.config["reward_speed_range"], [0, 1])
-
+ 
         # print(f'dist rew: {self.config["distance_reward"] * km_travelled}')
         # print(f'nrl rew: {self.config["not_in_right_lane_reward"] * (1 - (lane / max(len(neighbours) - 1, 1)))} driving in lane: {lane}')
         # print(f'dist to tv rew: {self.config["distance_to_tv_reward"] * speed_diff} driving at {self.vehicle.speed}')

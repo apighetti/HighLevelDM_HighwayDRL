@@ -5,6 +5,7 @@ from collections import deque
 
 import highway_env
 from highway_env import utils
+from highway_env import vehicle
 from highway_env.road.road import Road, LaneIndex
 from highway_env.vehicle.objects import RoadObject, Obstacle, Landmark
 from highway_env.utils import Vector

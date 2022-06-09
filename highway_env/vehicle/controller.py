@@ -1,7 +1,5 @@
-import math
 from optparse import Option
 from pickle import TRUE
-import time
 from typing import List, Tuple, Union, Optional
 from xmlrpc.client import Boolean
 from cv2 import threshold
@@ -12,7 +10,7 @@ from highway_env import utils
 from highway_env.road.road import Road, LaneIndex, Route
 from highway_env.utils import Vector
 from highway_env.vehicle.kinematics import Vehicle
-import time
+from highway_env.pid import PID
 
 
 class ControlledVehicle(Vehicle):
@@ -46,7 +44,7 @@ class ControlledVehicle(Vehicle):
                  speed: float = 0,
                  target_lane_index: LaneIndex = None,
                  target_speed: float = None,
-                 phy_action: float = None,
+                 phy_action: Union[dict, str] = None,
                  route: Route = None):
         super().__init__(road, position, heading, speed)
         self.target_lane_index = target_lane_index or self.lane_index
@@ -219,7 +217,7 @@ class ControlledVehicle(Vehicle):
 class MDPVehicle(ControlledVehicle):
 
     """A controlled vehicle with a specified discrete range of allowed target speeds."""
-    DEFAULT_TARGET_SPEEDS = np.linspace(20, 30, 20)
+    DEFAULT_TARGET_SPEEDS = np.linspace(10, 30, 20)
 
     def __init__(self,
                  road: Road,
@@ -331,43 +329,6 @@ class MDPVehicle(ControlledVehicle):
                 if (t % int(trajectory_timestep / dt)) == 0:
                     states.append(copy.deepcopy(v))
         return states
-
-class PID:
-    
-    def __init__(self,
-                 K_P: float,
-                 K_I: float,
-                 K_D: float) -> None:
-        
-        self.K_P = K_P
-        self.K_I = K_I
-        self.K_D = K_D
-        self.prev_error = 0
-        self.integral_error = 0
-        self.last_time = time.perf_counter()
-        
-    def clear(self):
-        self.prev_error = 0
-        self.integral_error = 0
-        
-    
-    def get_value(self, value, target_value, error = None):
-        
-        if error is None:
-            error = target_value - value
-            
-        t_m = time.perf_counter()
-        d_error = (error - self.prev_error)/(t_m-self.last_time)
-        i_error= self.integral_error + error*(t_m-self.last_time)
-        t = self.K_P * error + self.K_D * d_error + self.K_I * i_error
-        # print(t_m-self.last_time)
-        self.prev_error = error 
-        self.integral_error = i_error
-        self.last_time = t_m
-        
-        # print(f"value: {value}, target value: {target_value}, throttle: {t}")
-        
-        return t
     
 
 ##### Thesis add-on #####
@@ -442,7 +403,6 @@ class DecisionMakingVehicle(MDPVehicle):
                 # print("ACC ON")
                         
         elif action == "OVERTAKE":
-            # print("\nOVRTK")
             if(self.acc_flag or self.rml_flag):
                 self.acc_flag = False
                 self.rml_flag = False
@@ -525,7 +485,6 @@ class DecisionMakingVehicle(MDPVehicle):
         return throttle
 
     def physical_validity_modifier(self, overtake = False):
-        # print(target_time_gap)
         
         time_error = self.time_gap_error(self.TTG, self, self.front_vehicle)
         target_speed = self.MAX_SPEED
@@ -534,34 +493,12 @@ class DecisionMakingVehicle(MDPVehicle):
             target_speed = self.speed * (1 + (self.pid_time.get_value(None, None, time_error)/self.FAR_TIME))
             target_speed = self.MAX_SPEED if target_speed > self.MAX_SPEED else target_speed
         
-        # print("speed: ", target_speed, "\ntime: ", time_error, "\n")
-        
-        # if(target_time_gap):
-            
-        #     # print(self.pid_brake.get_value(self.time_gap_error(2, self, self.front_vehicle), target_time_gap),\
-        #     #     self.pid_acc.get_value(self.time_gap_error(2, self, self.front_vehicle), target_time_gap))
-            
-        #     if abs(target_time_gap) < 0.2:
-        #         return 0
-
-        #     if target_time_gap < 0:
-        #         throttle = -self.pid_brake.get_value(target_time_gap, self.TTG)
-
-        #     else :
-        #         throttle = -self.pid_acc.get_value(target_time_gap, self.TTG)
-        #     # return 0.9 * target_time_gap + 0.005*(self.speed - self.prev_speed)/0.05 if target_time_gap < 0 else target_time_gap * 0.7 + 0.005*(self.speed - self.prev_speed)/0.05
-        # else:
-        #     # throttle = self.speed_control(target_speed)
-        
         throttle = self.pid_speed.get_value(self.speed, target_speed) 
         
         if throttle < 0:
             throttle = throttle * 3
-            #if is_overtaking \
-             #   else self.pid_acc.get_value(self.speed, target_speed)
 
         return self.throttle_map(throttle)
-        # return self.throttle_map(throttle_accl, 0.012) if throttle_accl != 0 else self.throttle_map(throttle_brk, -0.07)
         
     def tactical_dm(self, action: Union[dict, str] = None) -> None:
         self.front_vehicle = self.get_front_vehicle()
