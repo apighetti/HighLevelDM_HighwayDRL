@@ -492,7 +492,7 @@ class DefensiveVehicle(LinearVehicle):
                                MERGE_ACC_GAIN / (MERGE_VEL_RATIO * MERGE_TARGET_VEL),
                                2.0]
 
-class BurinoVehicle(DecisionMakingVehicle):
+class HazardousVehicle(DecisionMakingVehicle):
     MAX_SPEED = 45
 
     def __init__(self,
@@ -528,7 +528,7 @@ class BurinoVehicle(DecisionMakingVehicle):
             next_lane_index = (curr_lane_index[0], curr_lane_index[1], curr_lane_index[2] + 1)
             _, right_rear_vehicle = self.road.neighbour_vehicles(self, next_lane_index)
 
-            if(right_rear_vehicle and (abs(right_rear_vehicle.position[0] - self.position[0]) > 20)):
+            if(right_rear_vehicle and (abs(right_rear_vehicle.position[0] - self.position[0]) > 10)):
                 index = 1
             else:
                 index = 0

@@ -39,7 +39,7 @@ class OVTKDecisionMakingEnv(AbstractEnv):
             "action": {
                 "type": "DecisionMakingAction",
             },
-            "other_vehicles_type": "highway_env.vehicle.behavior.BurinoVehicle",
+            "other_vehicles_type": "highway_env.vehicle.behavior.HazardousVehicle",
             "lanes_count": 2,
             "vehicles_count": 1,
             "controlled_vehicles": 1,
