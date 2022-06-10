@@ -226,9 +226,9 @@ class IDMVehicle(ControlledVehicle):
         :return: whether the lane change should be performed
         """
         if lane_index[2] == 0:
-            t = range(1, 5000)
+            t = range(0,1)
             h = random.choice(t)
-            if h > 20:
+            if h > 0.4:
                 return False           
 
         
@@ -528,7 +528,7 @@ class HazardousVehicle(DecisionMakingVehicle):
             next_lane_index = (curr_lane_index[0], curr_lane_index[1], curr_lane_index[2] + 1)
             _, right_rear_vehicle = self.road.neighbour_vehicles(self, next_lane_index)
 
-            if(right_rear_vehicle and (abs(right_rear_vehicle.position[0] - self.position[0]) > 10)):
+            if(right_rear_vehicle and (abs(right_rear_vehicle.position[0] - self.position[0]) >= 0)):
                 index = 1
             else:
                 index = 0
