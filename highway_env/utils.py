@@ -381,3 +381,7 @@ def sigmoid(x):
     if x > 0:
         return (2 / (1 + np.exp(-x/2.5))) - 1
     return 0
+
+
+def evaluate():
+    return

@@ -228,8 +228,8 @@ class IDMVehicle(ControlledVehicle):
         if lane_index[2] == 0:
             t = range(0,1)
             h = random.choice(t)
-            if h > 0.4:
-                return False           
+            if h > 0.2:
+                return False      
 
         
         # Is the maneuver unsafe for the new following vehicle?
@@ -256,7 +256,7 @@ class IDMVehicle(ControlledVehicle):
             old_following_a = self.acceleration(ego_vehicle=old_following, front_vehicle=self)
             old_following_pred_a = self.acceleration(ego_vehicle=old_following, front_vehicle=old_preceding)
             jerk = self_pred_a - self_a + self.POLITENESS * (new_following_pred_a - new_following_a
-                                                             + old_following_pred_a - old_following_a)
+                                                            + old_following_pred_a - old_following_a)
             if jerk < self.LANE_CHANGE_MIN_ACC_GAIN:
                 return False
 
