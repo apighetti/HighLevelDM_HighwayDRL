@@ -7,7 +7,7 @@ from highway_env import utils
 from highway_env.envs.common.abstract import AbstractEnv
 from highway_env.envs.common.action import Action
 from highway_env.road.road import Road, RoadNetwork
-from highway_env.utils import near_split, evaluate
+from highway_env.utils import near_split
 from highway_env.vehicle.controller import ControlledVehicle
 from highway_env.vehicle.kinematics import Vehicle
 from highway_env.vehicle.objects import LaneIndex
@@ -31,6 +31,8 @@ class DecisionMakingEnv(AbstractEnv):
     # LAST_VEHICLE_SPEED = 0
 
     LAST_ACTION = ""
+    
+    DECISION_CHANGE = 0
 
     @classmethod
     def default_config(cls) -> dict:
@@ -46,7 +48,7 @@ class DecisionMakingEnv(AbstractEnv):
             # "vehicles_count": 25, # curriculum learning su lanes e npc-vehicles
             "controlled_vehicles": 1,
             "initial_lane_id": None,
-            "duration": 120,  # [s]
+            "duration": 120,  # [s*2]
             "ego_spacing": 1,
             "vehicles_density": 0.6,
             # "collision_reward": -1,            # The reward received when colliding with a vehicle.
@@ -59,8 +61,7 @@ class DecisionMakingEnv(AbstractEnv):
                                                  # lower speeds according to config["reward_speed_range"].
             # "lane_change_reward": -0.005,      # The reward received at each lane change action.
             "reward_speed_range": [30, 36],
-            "offroad_terminal": False,
-            "exploitaition": False
+            "offroad_terminal": False
         })
         return config
 
@@ -203,13 +204,10 @@ class DecisionMakingEnv(AbstractEnv):
         # self.LAST_STEPS = self.steps
 
         # km_travelled = utils.lmap(round(self.TOTAL_SPACE,3), [0,36*self.config['duration']], [0,1])
-
-        print(f"{self.LAST_ACTION}, {self.vehicle.current_action}")
         
-        decision_change = 0
+        self.DECISION_CHANGE = 0
         if self.LAST_ACTION != self.vehicle.current_action:
-            print("decision change!")
-            decision_change = 1
+            self.DECISION_CHANGE = 1
             self.LAST_ACTION = self.vehicle.current_action
         
         # print(f"\ndistance to td reward {self.config['distance_reward'] * km_travelled}")
@@ -226,7 +224,7 @@ class DecisionMakingEnv(AbstractEnv):
         
         reward = self.config["not_in_right_lane_reward"] * (1 - (lane / max(len(neighbours) - 1, 1))) \
             + self.config["high_speed_reward"] * np.clip(scaled_speed, 0, 1) \
-            + self.config["decision_change"] * decision_change
+            + self.config["decision_change"] * self.DECISION_CHANGE
 
             # + self.config["distance_to_tv_reward"] * speed_diff \
             # + self.config["distance_reward"] * km_travelled
@@ -242,10 +240,6 @@ class DecisionMakingEnv(AbstractEnv):
 
         # print(f"\nmapped overall reward: {reward}, \ndense rewards:\n\tnot in RL reward:{self.config['not_in_right_lane_reward'] * (1 - (lane / max(len(neighbours) - 1, 1)))}, \n\thigh speed reward: {self.config['high_speed_reward']}\
         #     \nsparse rewards:\n\tcollision reward: {self.config['collision_reward']}")
-
-
-        # if self.config["exploitation"]:
-        #     evaluate(collision=self.vehicle.crashed, episode_ended=_is_terminal())
 
         return reward
 
