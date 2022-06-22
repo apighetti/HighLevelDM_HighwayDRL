@@ -31,6 +31,7 @@ class DecisionMakingEnv(AbstractEnv):
     # LAST_VEHICLE_SPEED = 0
 
     LAST_ACTION = ""
+    LAST_LANE_IDX = 1000
     
     DECISION_CHANGE = 0
 
@@ -204,10 +205,11 @@ class DecisionMakingEnv(AbstractEnv):
         # self.LAST_STEPS = self.steps
 
         # km_travelled = utils.lmap(round(self.TOTAL_SPACE,3), [0,36*self.config['duration']], [0,1])
-        
+
         self.DECISION_CHANGE = 0
         if self.LAST_ACTION != self.vehicle.current_action:
-            self.DECISION_CHANGE = 1
+            if self.LAST_ACTION != "":
+                self.DECISION_CHANGE = 1
             self.LAST_ACTION = self.vehicle.current_action
         
         # print(f"\ndistance to td reward {self.config['distance_reward'] * km_travelled}")
