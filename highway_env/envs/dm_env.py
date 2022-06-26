@@ -244,6 +244,11 @@ class DecisionMakingEnv(AbstractEnv):
         #     \nsparse rewards:\n\tcollision reward: {self.config['collision_reward']}")
 
         return reward
+    
+    def random_action(self):
+        actions = [self.action_type.actions_indexes['ACC'], self.action_type.actions_indexes['OVERTAKE'], self.action_type.actions_indexes['RIGHTMOSTLANE']]
+        random_action = random.choice(actions)
+        return random_action
 
     def _is_terminal(self) -> bool:
         """The episode is over if the ego vehicle crashed or the time is out."""

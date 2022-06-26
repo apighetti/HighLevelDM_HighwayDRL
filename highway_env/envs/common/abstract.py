@@ -301,6 +301,7 @@ class AbstractEnv(gym.Env):
         if self.vehicle.speed_index > 0 and self.action_type.longitudinal:
             actions.append(self.action_type.actions_indexes['SLOWER'])
         return actions
+        
 
     def set_monitor(self, monitor: gym.wrappers.Monitor):
         self._monitor = monitor

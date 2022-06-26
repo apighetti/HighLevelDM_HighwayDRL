@@ -13,7 +13,7 @@ from highway_env.vehicle.kinematics import Vehicle
 from highway_env.vehicle.objects import LaneIndex
 
 # START_SEC = 120
-# COL_REWARDS = [-0.5, -1, -3, -5] # ordini di grandezza differenti
+COL_REWARDS = [-.1, -1, -3, -5]
 # COL_REWARDS = [-3, -2.5, -2, -1.5] # ZZ try
 
 class OVTKDecisionMakingEnv(AbstractEnv):
@@ -24,10 +24,13 @@ class OVTKDecisionMakingEnv(AbstractEnv):
     staying on the rightmost lanes and avoiding collisions.
     """
 
-    LAST_STEPS = 1
-    TOTAL_SPACE = 0
-    LAST_VEHICLE_SPEED = 0
-    # LAST_ACTION = ""
+    # LAST_STEPS = 1
+    # TOTAL_SPACE = 0
+    # LAST_VEHICLE_SPEED = 0
+    LAST_ACTION = ""
+    LAST_LANE_IDX = 1000
+
+    DECISION_CHANGE = 0
 
     @classmethod
     def default_config(cls) -> dict:
@@ -47,11 +50,11 @@ class OVTKDecisionMakingEnv(AbstractEnv):
             "duration": 60,  # [s]
             "ego_spacing": 1,
             "vehicles_density": 0.7,
-            "collision_reward": -0.5,            # The reward received when colliding with a vehicle.
+            # "collision_reward": -0.5,            # The reward received when colliding with a vehicle.
             "not_in_right_lane_reward": -0.45,  # The reward received when driving on the right-most lanes, linearly mapped to
             #                                      # zero for other lanes.
             # "distance_to_tv_reward": -0.4,      # -0.015 // non basta come incentivo alla velocità
-            # "decision_change_reward": -0.25,   // NOT IMPLEMENTED YET
+            "decision_change": -0.4,
             # "distance_reward": 0.08,
             "high_speed_reward": 0.4,        # The reward received when driving at full speed, linearly mapped to zero for
                                                  # lower speeds according to config["reward_speed_range"].
@@ -110,7 +113,6 @@ class OVTKDecisionMakingEnv(AbstractEnv):
             self.road.vehicles.append(vehicle)
 
             for i in range(others):
-                aux = random.choices(range(0,self.config['lanes_count']), weights = vehicle_distribution, k=1)[0]
                 # vehicle = other_vehicles_type.create_random(self.road, lane_id=self.config["npc_initial_lane_id"], spacing=1 / self.config["vehicles_density"]) // self.get_npc_speed(aux))
                 vehicle = other_vehicles_type.create_random(self.road, speed = 45,\
                     lane_id = self.config["initial_lane_id"], spacing=1 / self.config["vehicles_density"]) #edit NPC
@@ -199,14 +201,15 @@ class OVTKDecisionMakingEnv(AbstractEnv):
         # km_travelled = utils.lmap(round(self.TOTAL_SPACE,3), [0,36*self.config['duration']], [0,1])
         # print(f'km travelled: {km_travelled}')
 
-
-        # if self.LAST_ACTION != self.vehicle.current_action:
-
-        # self.LAST_ACTION = self.vehicle.current_action
+        self.DECISION_CHANGE = 0
+        if self.LAST_ACTION != self.vehicle.current_action:
+            if self.LAST_ACTION != "":
+                self.DECISION_CHANGE = 1
+            self.LAST_ACTION = self.vehicle.current_action
         
         # print(f"\ndistance to td reward {self.config['distance_reward'] * km_travelled}")
 
-        # collision_index = int(utils.lmap(abs(self.steps - self.config['duration']), [0,self.config['duration']], [3,0]))
+        collision_index = int(utils.lmap(abs(self.steps - self.config['duration']), [0,self.config['duration']], [3,0]))
         # print(collision_index)
 
         # Use forward speed rather than speed, see https://github.com/eleurent/highway-env/issues/268
@@ -219,9 +222,10 @@ class OVTKDecisionMakingEnv(AbstractEnv):
         
         # COL_REWARDS[collision_index]
 
-        reward = self.config["collision_reward"] * self.vehicle.crashed \
+        reward = COL_REWARDS[collision_index] * self.vehicle.crashed \
             + self.config["not_in_right_lane_reward"] * (1 - (lane / max(len(neighbours) - 1, 1))) \
-            + self.config["high_speed_reward"] * np.clip(scaled_speed, 0, 1)
+            + self.config["high_speed_reward"] * np.clip(scaled_speed, 0, 1) \
+            + self.config["decision_change"] * self.DECISION_CHANGE
             
 
             # + self.config["distance_to_tv_reward"] * speed_diff \
@@ -229,10 +233,10 @@ class OVTKDecisionMakingEnv(AbstractEnv):
             # + self.config["distance_to_tv_reward"] * speed_diff \
 
         reward = utils.lmap(reward,
-                          [self.config["collision_reward"] + self.config["not_in_right_lane_reward"],
+                          [self.config["not_in_right_lane_reward"] + self.config["decision_change"],
                            self.config["high_speed_reward"]],
                           [0, 1])
-
+        reward += COL_REWARDS[collision_index] * self.vehicle.crashed
         reward = 0 if not self.vehicle.on_road else reward
         # print(f"\nreward: {reward}, \ndense rewards:\n\ttarget velocity reward: {self.config['distance_to_tv_reward'] * speed_diff},\n\tnot in RL reward:{self.config['not_in_right_lane_reward'] * (1 - (lane / max(len(neighbours) - 1, 1)))},\n\tduration reward: {self.config['distance_reward'] * km_travelled} \
         #     \nsparse rewards:\n\tcollision reward: {COL_REWARDS[collision_index]}")
@@ -240,12 +244,18 @@ class OVTKDecisionMakingEnv(AbstractEnv):
         # print(f"\nreward: {reward}, \ndense rewards:\n\tnot in RL reward:{self.config['not_in_right_lane_reward'] * (1 - (lane / max(len(neighbours) - 1, 1)))} \
         #     \nsparse rewards:\n\tcollision reward: {self.config['collision_reward']}")
         return reward
+    
+    def random_action(self):
+        actions = [self.action_type.actions_indexes['ACC'], self.action_type.actions_indexes['OVERTAKE'], self.action_type.actions_indexes['RIGHTMOSTLANE']]
+        random_action = random.choice(actions)
+        return random_action
+
 
     def _is_terminal(self) -> bool:
         """The episode is over if the ego vehicle crashed or the time is out."""
-        self.LAST_STEPS = 1
-        self.TOTAL_SPACE = 0
-        self.LAST_VEHICLE_SPEED = 0
+        # self.LAST_STEPS = 1
+        # self.TOTAL_SPACE = 0
+        # self.LAST_VEHICLE_SPEED = 0
         # self.LAST_ACTION = ""
         return self.vehicle.crashed or \
             self.steps >= self.config["duration"] or \
