@@ -38,7 +38,7 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
         super().__init__(config)
         self.collision_reward = 0
         self.high_speed_reward = 0
-        self.not_in_L_reward = 0
+        self.rml_reward = 0
 
     @classmethod
     def default_config(cls) -> dict:
@@ -55,10 +55,10 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
             "controlled_vehicles": 1,
             "initial_lane_id": None,
             "duration": 120,  # [s]
-            "ego_spacing": 1,
+            "ego_spacing": 2,
             "vehicles_density": 0.7,
             "collision_reward": -1,            # The reward received when colliding with a vehicle.
-            "not_in_right_lane_reward": -0.3,  # The reward received when driving on the right-most lanes, linearly mapped to zero for other lanes.
+            "right_lane_reward": 0.1,  # The reward received when driving on the right-most lanes, linearly mapped to zero for other lanes.
             # "distance_to_tv_reward": -0.3,   
             # "decision_change": -0.1,
             # "distance_reward": 0.08,
@@ -175,19 +175,20 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
         
         self.collision_reward = self.config["collision_reward"] * self.vehicle.crashed
         self.high_speed_reward = self.config["high_speed_reward"] * np.clip(scaled_speed, 0, 1)
-        self.not_in_RML_reward = self.config["not_in_right_lane_reward"] * (1 - (lane / max(len(neighbours) - 1, 1)))
+        self.rml_reward = self.config["right_lane_reward"] * lane / max(len(neighbours) - 1, 1)
 
         reward = self.collision_reward \
-            + self.not_in_RML_reward \
+            + self.rml_reward \
             + self.high_speed_reward
             # + self.config["decision_change"] * self.DECISION_CHANGE \
             # + self.config["distance_to_tv_reward"] * speed_diff \
             # + self.config["distance_reward"] * km_travelled
 
         reward = utils.lmap(reward,
-                            [self.config["collision_reward"] + self.config["not_in_right_lane_reward"],
-                             self.config["high_speed_reward"]],
+                            [self.config["collision_reward"],
+                             self.config["high_speed_reward"] + self.config["right_lane_reward"]],
                             [0, 1])
+
         reward = 0 if not self.vehicle.on_road else reward
         
         # print(f"\nreward: {reward}, \ndense rewards:\n\thigh speed reward: {self.config['high_speed_reward'] * np.clip(scaled_speed, 0, 1)},\

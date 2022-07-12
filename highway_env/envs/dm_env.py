@@ -61,7 +61,7 @@ class DecisionMakingEnv(AbstractEnv):
             "not_in_right_lane_reward": -0.3,    # The reward received when driving on the right-most lanes, linearly mapped to
             # "decision_change": -0.1,             # working, to be tested
             # "distance_reward": 0.08,
-            "high_speed_reward": 0.5,        # The reward received when driving at full speed, linearly mapped to zero for lower speeds according to config["reward_speed_range"].
+            "high_speed_reward": 0.4,        # The reward received when driving at full speed, linearly mapped to zero for lower speeds according to config["reward_speed_range"].
             "reward_speed_range": [30, 36],
             "offroad_terminal": False
         })
@@ -164,17 +164,17 @@ class DecisionMakingEnv(AbstractEnv):
         self.high_speed_reward = self.config["high_speed_reward"] * np.clip(scaled_speed, 0, 1)
         self.not_in_RML_reward = self.config["not_in_right_lane_reward"] * (1 - (lane / max(len(neighbours) - 1, 1)))
 
-        reward = self.collision_reward \
-            + self.not_in_RML_reward \
+        reward = self.not_in_RML_reward \
             + self.high_speed_reward
             # + self.config["decision_change"] * self.DECISION_CHANGE 
             # + self.config["distance_to_tv_reward"] * speed_diff \
             # + self.config["distance_reward"] * km_travelled
 
         reward = utils.lmap(reward,
-                            [self.config["collision_reward"] + self.config["not_in_right_lane_reward"],
+                            [self.config["not_in_right_lane_reward"],
                              self.config["high_speed_reward"]],
                             [0, 1])
+        reward += self.collision_reward
         reward = 0 if not self.vehicle.on_road else reward
         # print(f"\nreward: {reward}, \ndense rewards:\n\ttarget velocity reward: {self.config['distance_to_tv_reward'] * speed_diff},\n\tnot in RL reward:{self.config['not_in_right_lane_reward'] * (1 - (lane / max(len(neighbours) - 1, 1)))},\n\tduration reward: {self.config['distance_reward'] * km_travelled} \
         #     \nsparse rewards:\n\tcollision reward: {COL_REWARDS[collision_index]}")
