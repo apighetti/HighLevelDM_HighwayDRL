@@ -58,7 +58,7 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
             "ego_spacing": 2,
             "vehicles_density": 0.7,
             "collision_reward": -1,            # The reward received when colliding with a vehicle.
-            "right_lane_reward": 0.1,  # The reward received when driving on the right-most lanes, linearly mapped to zero for other lanes.
+            "right_lane_reward": 0.2,  # The reward received when driving on the right-most lanes, linearly mapped to zero for other lanes.
             # "distance_to_tv_reward": -0.3,   
             # "decision_change": -0.1,
             # "distance_reward": 0.08,
@@ -95,7 +95,7 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
     def get_npc_speed(self, aux):
         '''Compute speed of a spawned vehicle according to its position.'''
 
-        speed = utils.lmap(aux, [0, self.config['lanes_count']], [36, 20])
+        speed = utils.lmap(aux, [0, self.config['lanes_count']-1], [36, 20])
         return speed
 
     def _create_vehicles(self, vehicle_distribution) -> None:

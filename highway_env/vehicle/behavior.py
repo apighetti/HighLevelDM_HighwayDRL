@@ -20,7 +20,7 @@ class IDMVehicle(ControlledVehicle):
     """
 
     # Longitudinal policy parameters
-    ACC_MAX = 6.0  # [m/s2]
+    ACC_MAX = 8.0  # [m/s2]
     """Maximum acceleration."""
 
     COMFORT_ACC_MAX = 3.0  # [m/s2]
@@ -143,16 +143,17 @@ class IDMVehicle(ControlledVehicle):
         :param rear_vehicle: the vehicle following the ego-vehicle
         :return: the acceleration command for the ego-vehicle [m/s2]
         """
+        accl_randomizer = random.choice(np.arange(-3, 3, step=0.1))
         if not ego_vehicle or not isinstance(ego_vehicle, Vehicle):
             return 0
         ego_target_speed = abs(utils.not_zero(getattr(ego_vehicle, "target_speed", 0)))
         acceleration = self.COMFORT_ACC_MAX * (
-                1 - np.power(max(ego_vehicle.speed, 0) / ego_target_speed, self.DELTA))
+                1 - np.power(max(ego_vehicle.speed, 0) / ego_target_speed, self.DELTA)) + accl_randomizer
 
         if front_vehicle:
             d = ego_vehicle.lane_distance_to(front_vehicle)
             acceleration -= self.COMFORT_ACC_MAX * \
-                np.power(self.desired_gap(ego_vehicle, front_vehicle) / utils.not_zero(d), 2)
+                np.power(self.desired_gap(ego_vehicle, front_vehicle) / utils.not_zero(d), 2) + accl_randomizer
         return acceleration
 
     def desired_gap(self, ego_vehicle: Vehicle, front_vehicle: Vehicle = None, projected: bool = True) -> float:
@@ -226,12 +227,11 @@ class IDMVehicle(ControlledVehicle):
         :return: whether the lane change should be performed
         """
         if lane_index[2] == 0:
-            t = range(0,1)
+            t = np.arange(0,1, step=0.1)
             h = random.choice(t)
-            if h > 0.2:
-                return False      
-
-        
+            if h > 0.3:
+                return False
+            
         # Is the maneuver unsafe for the new following vehicle?
         new_preceding, new_following = self.road.neighbour_vehicles(self, lane_index)
         new_following_a = self.acceleration(ego_vehicle=new_following, front_vehicle=new_preceding)

@@ -13,7 +13,7 @@ from highway_env.vehicle.kinematics import Vehicle
 from highway_env.vehicle.objects import LaneIndex
 
 COL_REWARDS = [-.05,-.5,-1]
-NUM_NPCS = np.arange(10,25)
+NUM_NPCS = np.arange(10,20)
 
 class DecisionMakingEnv(AbstractEnv):
     """
@@ -56,9 +56,9 @@ class DecisionMakingEnv(AbstractEnv):
             "initial_lane_id": None,
             "duration": 120,  # [s*2]
             "ego_spacing": 1,
-            "vehicles_density": 0.7,
-            "collision_reward": -1,              # The reward received when colliding with a vehicle.
-            "right_lane_reward": 0.1,            # The reward received when driving on the right-most lanes, linearly mapped to
+            "vehicles_density": 0.4,
+            "collision_reward": -5,              # The reward received when colliding with a vehicle.
+            "right_lane_reward": 0.2,            # The reward received when driving on the right-most lanes, linearly mapped to
             # "decision_change": -0.1,             # working, to be tested
             # "distance_reward": 0.08,
             "high_speed_reward": 0.4,        # The reward received when driving at full speed, linearly mapped to zero for lower speeds according to config["reward_speed_range"].
@@ -69,7 +69,7 @@ class DecisionMakingEnv(AbstractEnv):
 
     def _reset(self) -> None:
         # w = self.vehicles_distribution()
-        w = [0, 50, 50]
+        w = [0, 0.5, 0.5]
         self._create_road()
         self._create_vehicles(w)
 
@@ -94,7 +94,7 @@ class DecisionMakingEnv(AbstractEnv):
     def get_npc_speed(self, aux):
         '''Compute speed of a spawned vehicle according to its position.'''
         
-        speed = utils.lmap(aux, [0, self.config['lanes_count']], [36, 20])
+        speed = utils.lmap(aux, [0, self.config['lanes_count']-1], [36, 20])
         return speed
 
     def _create_vehicles(self, vehicle_distribution) -> None:
