@@ -38,6 +38,7 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
         super().__init__(config)
         self.collision_reward = 0
         self.high_speed_reward = 0
+        # self.negative_speed_reward = 0
         self.rml_reward = 0
 
     @classmethod
@@ -51,6 +52,7 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
                 "type": "DecisionMakingAction",
             },
             "lanes_count": 2,
+            "policy_frequency": 0.5, # [Hz]
             # "vehicles_count": 5,              # curriculum learning on npc-vehicles
             "controlled_vehicles": 1,
             "initial_lane_id": None,
@@ -169,20 +171,23 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
 
         # Use forward speed rather than speed, see https://github.com/eleurent/highway-env/issues/268
         forward_speed = self.vehicle.speed * np.cos(self.vehicle.heading)
-        scaled_speed = utils.lmap(
-            forward_speed, self.config["reward_speed_range"], [0, 1])
+        scaled_speed = utils.lmap(forward_speed, self.config["reward_speed_range"], [0, 1])
+        # negative_scaled_speed = utils.lmap(forward_speed, [0, self.config["reward_speed_range"][0]], [1, 0])
 
-        
+
         self.collision_reward = self.config["collision_reward"] * self.vehicle.crashed
         self.high_speed_reward = self.config["high_speed_reward"] * np.clip(scaled_speed, 0, 1)
+        # self.negative_speed_reward = -self.config["high_speed_reward"] * np.clip(negative_scaled_speed, 0, 1)
         self.rml_reward = self.config["right_lane_reward"] * lane / max(len(neighbours) - 1, 1)
 
         reward = self.collision_reward \
             + self.rml_reward \
-            + self.high_speed_reward
+            + self.high_speed_reward 
+            # + self.negative_speed_reward
             # + self.config["decision_change"] * self.DECISION_CHANGE \
             # + self.config["distance_to_tv_reward"] * speed_diff \
             # + self.config["distance_reward"] * km_travelled
+        
 
         reward = utils.lmap(reward,
                             [self.config["collision_reward"],
