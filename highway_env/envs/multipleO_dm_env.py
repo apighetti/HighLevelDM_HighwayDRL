@@ -24,9 +24,9 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
     staying on the rightmost lanes and avoiding collisions.
     """
 
-    # LAST_STEPS = 1
-    # TOTAL_SPACE = 0
-    # LAST_VEHICLE_SPEED = 0
+    LAST_STEPS = 1
+    TOTAL_SPACE = 0
+    LAST_VEHICLE_SPEED = 0
 
     LAST_ACTION = ""
     LAST_LANE_IDX = 1000
@@ -38,6 +38,7 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
         super().__init__(config)
         self.collision_reward = 0
         self.high_speed_reward = 0
+        self.km_goal_reward = 0
         # self.negative_speed_reward = 0
         self.rml_reward = 0
 
@@ -52,7 +53,6 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
                 "type": "DecisionMakingAction",
             },
             "lanes_count": 2,
-            "policy_frequency": 0.5, # [Hz]
             # "vehicles_count": 5,              # curriculum learning on npc-vehicles
             "controlled_vehicles": 1,
             "initial_lane_id": None,
@@ -60,6 +60,7 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
             "ego_spacing": 2,
             "vehicles_density": 0.7,
             "collision_reward": -1,            # The reward received when colliding with a vehicle.
+            "km_goal_reward": 10,
             "right_lane_reward": 0.2,  # The reward received when driving on the right-most lanes, linearly mapped to zero for other lanes.
             # "distance_to_tv_reward": -0.3,   
             # "decision_change": -0.1,
@@ -145,12 +146,12 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
         # speed_diff = utils.lmap((36 - self.vehicle.speed), [0,36] , [0,1])
 
         # duration_diff = utils.lmap((self.config['duration'] - self.steps), [self.config['duration'],0], [0,1])
-        # self.TOTAL_SPACE += abs(self.vehicle.speed*(self.steps - self.LAST_STEPS))
-        # self.LAST_VEHICLE_SPEED = self.vehicle.speed
-        # self.LAST_STEPS = self.steps
-        # # print(round(self.TOTAL_SPACE,3))
+        self.TOTAL_SPACE += abs(self.vehicle.speed*(self.steps - self.LAST_STEPS))
+        self.LAST_VEHICLE_SPEED = self.vehicle.speed
+        self.LAST_STEPS = self.steps
+        # print(round(self.TOTAL_SPACE,3))
 
-        # km_travelled = utils.lmap(round(self.TOTAL_SPACE,3), [0,36*self.config['duration']], [0,1])
+        km_travelled = utils.lmap(round(self.TOTAL_SPACE,3), [0,36*self.config['duration']], [0,1])
 
         # if self.LAST_ACTION != self.vehicle.current_action:
         #   self.LAST_ACTION = self.vehicle.current_action
@@ -176,24 +177,30 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
 
 
         self.collision_reward = self.config["collision_reward"] * self.vehicle.crashed
+        self.km_goal_reward = self.config["km_goal_reward"] * km_travelled if not self.vehicle.crashed else 0
+        
         self.high_speed_reward = self.config["high_speed_reward"] * np.clip(scaled_speed, 0, 1)
         # self.negative_speed_reward = -self.config["high_speed_reward"] * np.clip(negative_scaled_speed, 0, 1)
         self.rml_reward = self.config["right_lane_reward"] * lane / max(len(neighbours) - 1, 1)
 
-        reward = self.collision_reward \
-            + self.rml_reward \
-            + self.high_speed_reward 
-            # + self.negative_speed_reward
-            # + self.config["decision_change"] * self.DECISION_CHANGE \
-            # + self.config["distance_to_tv_reward"] * speed_diff \
-            # + self.config["distance_reward"] * km_travelled
+        if(self._is_terminal()):
+            reward = self.collision_reward \
+                + self.km_goal_reward
+                # + self.rml_reward \
+                # + self.high_speed_reward 
+                # + self.negative_speed_reward
+                # + self.config["decision_change"] * self.DECISION_CHANGE \
+                # + self.config["distance_to_tv_reward"] * speed_diff \
+                # + self.config["distance_reward"] * km_travelled
         
 
-        reward = utils.lmap(reward,
-                            [self.config["collision_reward"],
-                             self.config["high_speed_reward"] + self.config["right_lane_reward"]],
-                            [0, 1])
-
+            reward = utils.lmap(reward,
+                                [self.config["collision_reward"],
+                                self.config["km_goal_reward"]],
+                                [0, 1])
+        else:
+            reward = 0
+        
         reward = 0 if not self.vehicle.on_road else reward
         
         # print(f"\nreward: {reward}, \ndense rewards:\n\thigh speed reward: {self.config['high_speed_reward'] * np.clip(scaled_speed, 0, 1)},\
@@ -212,9 +219,9 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
 
     def _is_terminal(self) -> bool:
         """The episode is over if the ego vehicle crashed or the time is out."""
-        # self.LAST_STEPS = 1
-        # self.TOTAL_SPACE = 0
-        # self.LAST_VEHICLE_SPEED = 0
+        self.LAST_STEPS = 1
+        self.TOTAL_SPACE = 0
+        self.LAST_VEHICLE_SPEED = 0
         # self.LAST_ACTION = ""
         return self.vehicle.crashed or \
             self.steps >= self.config["duration"] or \
