@@ -60,7 +60,7 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
             "ego_spacing": 2,
             "vehicles_density": 0.7,
             "collision_reward": -1,            # The reward received when colliding with a vehicle.
-            "km_goal_reward": 10,
+            "km_goal_reward": 1,
             "right_lane_reward": 0.2,  # The reward received when driving on the right-most lanes, linearly mapped to zero for other lanes.
             # "distance_to_tv_reward": -0.3,   
             # "decision_change": -0.1,
@@ -183,33 +183,33 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
         # self.negative_speed_reward = -self.config["high_speed_reward"] * np.clip(negative_scaled_speed, 0, 1)
         self.rml_reward = self.config["right_lane_reward"] * lane / max(len(neighbours) - 1, 1)
 
-        if(self._is_terminal()):
-            reward = self.collision_reward \
-                + self.km_goal_reward
-                # + self.rml_reward \
-                # + self.high_speed_reward 
-                # + self.negative_speed_reward
-                # + self.config["decision_change"] * self.DECISION_CHANGE \
-                # + self.config["distance_to_tv_reward"] * speed_diff \
-                # + self.config["distance_reward"] * km_travelled
-        
-
-            reward = utils.lmap(reward,
-                                [self.config["collision_reward"],
-                                self.config["km_goal_reward"]],
-                                [0, 1])
-        else:
-            reward = 0
-        
-        reward = 0 if not self.vehicle.on_road else reward
-        
+        reward =+ self.collision_reward \
+            + self.rml_reward
+            # + self.negative_speed_reward
+            # + self.config["decision_change"] * self.DECISION_CHANGE \
+            # + self.config["distance_to_tv_reward"] * speed_diff \
+            # + self.config["distance_reward"] * km_travelled
+                
         # print(f"\nreward: {reward}, \ndense rewards:\n\thigh speed reward: {self.config['high_speed_reward'] * np.clip(scaled_speed, 0, 1)},\
         #     \n\tnot in RL reward:{self.config['not_in_right_lane_reward'] * (1 - (lane / max(len(neighbours) - 1, 1)))},\n\tdecision change reward: {self.config['decision_change'] * self.DECISION_CHANGE} \
         #     \nsparse rewards:\n\tcollision reward: {self.config['collision_reward'] * self.vehicle.crashed}")
         
         if(self._is_terminal()):
             self.CURR_STEPS += self.steps
+            reward =+ self.km_goal_reward
+        #     reward = utils.lmap(reward,
+        #     [self.config["collision_reward"],
+        #     self.config["km_goal_reward"] + self.config["right_lane_reward"]],
+        #     [0, 1])
+        # else:
+        #     reward = utils.lmap(reward,
+        #                 [self.config["collision_reward"],
+        #                 self.config["right_lane_reward"]],
+        #                 [0, 1])
             
+
+        reward = 0 if not self.vehicle.on_road else reward
+          
         return reward
     
     def random_action(self):

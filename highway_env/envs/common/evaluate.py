@@ -20,9 +20,6 @@ class PrintMetrics():
 
         self.env_names.append(env_name)
         
-        if collision:
-            km_travelled = 0
-
         series = pd.Series([env_name, round(episode_duration), 1 if collision else 0, round(km_travelled, 2), round(mean_speed, 2), round(mean_acceleration, 3), round(
             mean_deceleration, 3), decision_change_num, left_lane_change_num, right_lane_change_num], name=curr_episode_num, index=self.episode_df.columns)
 

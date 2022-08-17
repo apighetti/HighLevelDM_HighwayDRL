@@ -143,7 +143,7 @@ class IDMVehicle(ControlledVehicle):
         :param rear_vehicle: the vehicle following the ego-vehicle
         :return: the acceleration command for the ego-vehicle [m/s2]
         """
-        lane_accel = utils.lmap(self.lane_index[2], [0, len(self.road.network.lanes_list())-1], [2, 0])
+        # lane_accel = utils.lmap(self.lane_index[2], [0, len(self.road.network.lanes_list())-1], [2, 0])
 
         if not ego_vehicle or not isinstance(ego_vehicle, Vehicle):
             return 0
@@ -156,7 +156,7 @@ class IDMVehicle(ControlledVehicle):
             acceleration -= self.COMFORT_ACC_MAX * \
                 np.power(self.desired_gap(ego_vehicle, front_vehicle) / utils.not_zero(d), 2) 
         
-        return acceleration + lane_accel
+        return acceleration
 
     def desired_gap(self, ego_vehicle: Vehicle, front_vehicle: Vehicle = None, projected: bool = True) -> float:
         """
@@ -227,7 +227,13 @@ class IDMVehicle(ControlledVehicle):
 
         :param lane_index: the candidate lane for the change
         :return: whether the lane change should be performed
-        """            
+        """
+        
+        if lane_index[2] == 0:
+            t = np.arange(0, 1, step=0.1)
+            h = random.choice(t)
+            if h > 0.2:
+                return False
         # Is the maneuver unsafe for the new following vehicle?
         new_preceding, new_following = self.road.neighbour_vehicles(self, lane_index)
         new_following_a = self.acceleration(ego_vehicle=new_following, front_vehicle=new_preceding)
