@@ -61,7 +61,7 @@ class DecisionMakingEnv(AbstractEnv):
             "ego_spacing": 1,
             "vehicles_density": 0.5,
             "collision_reward": -1,              # The reward received when colliding with a vehicle.
-            "km_goal_reward": 1,
+            "km_goal_reward": 10,
             "right_lane_reward": 0.2,            # The reward received when driving on the right-most lanes, linearly mapped to
             # "decision_change": -0.1,             # working, to be tested
             # "distance_reward": 0.08,
@@ -73,6 +73,7 @@ class DecisionMakingEnv(AbstractEnv):
 
     def _reset(self) -> None:
         w = self.vehicles_distribution()
+        # self.c = 0
         # w = [0, 0.5, 0.5]
 
         self._create_road()
@@ -174,9 +175,7 @@ class DecisionMakingEnv(AbstractEnv):
         # self.negative_speed_reward = self.config["high_speed_reward"] * np.clip(negative_scaled_speed, 0, 1)
         self.rml_reward = self.config["right_lane_reward"] * lane / max(len(neighbours) - 1, 1)
         
-        reward = + self.collision_reward \
-            + self.high_speed_reward \
-            + self.rml_reward
+        reward =+ self.rml_reward
             # + self.rml_reward \
             # + self.high_speed_reward 
             # + self.negative_speed_reward
@@ -184,21 +183,16 @@ class DecisionMakingEnv(AbstractEnv):
             # + self.config["distance_to_tv_reward"] * speed_diff \
             # + self.config["distance_reward"] * km_travelled
             
-        # print(f"\nreward: {reward}, \ndense rewards:\n\ttarget velocity reward: {self.config['distance_to_tv_reward'] * speed_diff},\n\tnot in RL reward:{self.config['not_in_right_lane_reward'] * (1 - (lane / max(len(neighbours) - 1, 1)))},\n\tduration reward: {self.config['distance_reward'] * km_travelled} \
-        #     \nsparse rewards:\n\tcollision reward: {COL_REWARDS[collision_index]}")
         
         if(self._is_terminal()):
             self.CURR_STEPS += self.steps
-            reward += self.km_goal_reward
-            reward = utils.lmap(reward,
-                    [self.config["collision_reward"],
-                    self.config["km_goal_reward"] + self.config["right_lane_reward"] + self.config["high_speed_reward"]],
-                    [0, 1])
-        else:
-            reward = utils.lmap(reward,
-                        [self.config["collision_reward"],
-                        self.config["right_lane_reward"] + self.config["high_speed_reward"]],
-                        [0, 1])
+            reward += self.km_goal_reward \
+                   + self.collision_reward
+                   
+        # self.c += 1
+            
+        # print(f"\nreward: {reward}, \ndense rewards:\n\trml reward: {self.rml_reward}, count: {self.c}\
+        #     \nsparse rewards:\n\tcollision reward: {self.collision_reward}\n\tkm goal: {self.km_goal_reward}")
             
         reward = 0 if not self.vehicle.on_road else reward
             

@@ -14,7 +14,7 @@ from highway_env.vehicle.objects import LaneIndex
 
 COL_REWARDS = [-0.01, -0.1, -1] 
 SPACINGS = [1, 2, 3]
-NUM_NPCS = np.arange(1, 6)
+NUM_NPCS = np.arange(1, 11)
 
 class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
     """
@@ -60,7 +60,7 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
             "ego_spacing": 2,
             "vehicles_density": 0.7,
             "collision_reward": -1,            # The reward received when colliding with a vehicle.
-            "km_goal_reward": 1,
+            "km_goal_reward": 10,
             "right_lane_reward": 0.2,  # The reward received when driving on the right-most lanes, linearly mapped to zero for other lanes.
             # "distance_to_tv_reward": -0.3,   
             # "decision_change": -0.1,
@@ -183,8 +183,7 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
         # self.negative_speed_reward = -self.config["high_speed_reward"] * np.clip(negative_scaled_speed, 0, 1)
         self.rml_reward = self.config["right_lane_reward"] * lane / max(len(neighbours) - 1, 1)
 
-        reward =+ self.collision_reward \
-            + self.rml_reward
+        reward =+ self.rml_reward
             # + self.negative_speed_reward
             # + self.config["decision_change"] * self.DECISION_CHANGE \
             # + self.config["distance_to_tv_reward"] * speed_diff \
@@ -196,7 +195,8 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
         
         if(self._is_terminal()):
             self.CURR_STEPS += self.steps
-            reward =+ self.km_goal_reward
+            reward += self.km_goal_reward \
+                   + self.collision_reward
         #     reward = utils.lmap(reward,
         #     [self.config["collision_reward"],
         #     self.config["km_goal_reward"] + self.config["right_lane_reward"]],
