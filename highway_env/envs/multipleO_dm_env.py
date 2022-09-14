@@ -61,7 +61,7 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
             "vehicles_density": 0.7,
             "collision_reward": -1,            # The reward received when colliding with a vehicle.
             "km_goal_reward": 10,
-            "right_lane_reward": 0.4,  # The reward received when driving on the right-most lanes, linearly mapped to zero for other lanes.
+            "right_lane_reward": 0.2,  # The reward received when driving on the right-most lanes, linearly mapped to zero for other lanes.
             # "distance_to_tv_reward": -0.3,   
             # "decision_change": -0.1,
             # "distance_reward": 0.08,
@@ -183,7 +183,9 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
         # self.negative_speed_reward = -self.config["high_speed_reward"] * np.clip(negative_scaled_speed, 0, 1)
         self.rml_reward = self.config["right_lane_reward"] * lane / max(len(neighbours) - 1, 1)
 
-        reward =+ self.rml_reward \
+        reward = \
+            + self.collision_reward \
+            + self.rml_reward \
             + self.high_speed_reward
             # + self.negative_speed_reward
             # + self.config["decision_change"] * self.DECISION_CHANGE \
@@ -205,16 +207,16 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
         #                 [0, 1])
         
         reward = utils.lmap(reward,
-            [0,
+            [self.collision_reward,
             self.config["high_speed_reward"] + self.config["right_lane_reward"]],
             [0, 1])
 
         if(self._is_terminal()):
             self.CURR_STEPS += self.steps
-            reward += self.collision_reward
+            # reward += self.collision_reward
             
-        # print(f"\nreward: {reward}, \ndense rewards:\n\trml reward: {self.rml_reward}, high speed rew: {self.high_speed_reward}\
-        #     \nsparse rewards:\n\tcollision reward: {self.collision_reward}")
+        print(f"\nreward: {reward}, \ndense rewards:\n\trml reward: {self.rml_reward}, high speed rew: {self.high_speed_reward}\
+            \nsparse rewards:\n\tcollision reward: {self.collision_reward}")
         reward = 0 if not self.vehicle.on_road else reward
           
         return reward
