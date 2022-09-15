@@ -175,7 +175,7 @@ class DecisionMakingEnv(AbstractEnv):
         # self.negative_speed_reward = self.config["high_speed_reward"] * np.clip(negative_scaled_speed, 0, 1)
         self.rml_reward = self.config["right_lane_reward"] * lane / max(len(neighbours) - 1, 1)
         
-        reward =+ self.rml_reward
+        # reward =+ self.rml_reward
             # + self.rml_reward \
             # + self.high_speed_reward 
             # + self.negative_speed_reward
