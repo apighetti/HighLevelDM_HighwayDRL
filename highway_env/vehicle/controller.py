@@ -2,7 +2,6 @@ from optparse import Option
 from pickle import TRUE
 from typing import List, Tuple, Union, Optional
 from xmlrpc.client import Boolean
-from cv2 import threshold
 
 import numpy as np
 import copy
