@@ -183,7 +183,7 @@ class DecisionMakingEnv(AbstractEnv):
             # + self.config["distance_to_tv_reward"] * speed_diff \
             # + self.config["distance_reward"] * km_travelled
             
-        
+        reward = 0
         if(self._is_terminal()):
             self.CURR_STEPS += self.steps
             reward += self.km_goal_reward \
