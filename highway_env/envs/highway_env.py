@@ -23,7 +23,8 @@ class HighwayEnv(AbstractEnv):
         config = super().default_config()
         config.update({
             "observation": {
-                "type": "Kinematics"
+                "type": "Kinematics",
+                "vehicles_count": 8
             },
             "action": {
                 "type": "DiscreteMetaAction",
