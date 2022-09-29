@@ -175,19 +175,30 @@ class DecisionMakingEnv(AbstractEnv):
         # self.negative_speed_reward = self.config["high_speed_reward"] * np.clip(negative_scaled_speed, 0, 1)
         self.rml_reward = self.config["right_lane_reward"] * lane / max(len(neighbours) - 1, 1)
         
-        # reward =+ self.rml_reward
-            # + self.rml_reward \
-            # + self.high_speed_reward 
+        reward = \
+            + self.collision_reward \
+            + self.rml_reward \
+            + self.high_speed_reward
             # + self.negative_speed_reward
             # + self.config["decision_change"] * self.DECISION_CHANGE \
             # + self.config["distance_to_tv_reward"] * speed_diff \
             # + self.config["distance_reward"] * km_travelled
             
-        reward = 0
         if(self._is_terminal()):
             self.CURR_STEPS += self.steps
-            reward += self.km_goal_reward \
-                   + self.collision_reward
+            reward = \
+                + self.km_goal_reward \
+                + self.collision_reward
+
+            reward = utils.lmap(reward,
+                            [self.config["collision_reward"],
+                            self.config["high_speed_reward"] + self.config["right_lane_reward"] + self.config["km_goal_reward"]],
+                            [0, 1])
+        else:
+            reward = utils.lmap(reward,
+                            [0,
+                            self.config["high_speed_reward"] + self.config["right_lane_reward"]],
+                            [0, 1])
                    
         # self.c += 1
             
