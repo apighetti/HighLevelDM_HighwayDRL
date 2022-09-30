@@ -174,7 +174,7 @@ class KinematicObservation(ObservationType):
         self.observe_intentions = observe_intentions
 
     def space(self) -> spaces.Space:
-        return spaces.Box(shape=(self.vehicles_count, len(self.features)), low=-np.inf, high=np.inf, dtype=np.float32)
+        return spaces.Box(shape=(self.vehicles_count,  len(self.features)), low=-np.inf, high=np.inf, dtype=np.float32)
 
     def normalize_obs(self, df: pd.DataFrame) -> pd.DataFrame:
         """
