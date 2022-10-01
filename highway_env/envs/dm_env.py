@@ -62,7 +62,7 @@ class DecisionMakingEnv(AbstractEnv):
             "vehicles_density": 0.4,
             "collision_reward": -3,              # The reward received when colliding with a vehicle.
             "km_goal_reward": 1,
-            "right_lane_reward": 0.1,            # The reward received when driving on the right-most lanes, linearly mapped to
+            "right_lane_reward": 0.2,            # The reward received when driving on the right-most lanes, linearly mapped to
             # "decision_change": -0.1,             # working, to be tested
             # "distance_reward": 0.08,
             "high_speed_reward": 0.4,        # The reward received when driving at full speed, linearly mapped to zero for lower speeds according to config["reward_speed_range"].
