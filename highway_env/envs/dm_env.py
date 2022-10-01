@@ -13,7 +13,7 @@ from highway_env.vehicle.kinematics import Vehicle
 from highway_env.vehicle.objects import LaneIndex
 
 COL_REWARDS = [-.05,-.5,-1]
-NUM_NPCS = np.arange(15,30)
+NUM_NPCS = np.arange(25,35)
 
 class DecisionMakingEnv(AbstractEnv):
     """
@@ -58,8 +58,8 @@ class DecisionMakingEnv(AbstractEnv):
             "controlled_vehicles": 1,
             "initial_lane_id": None,
             "duration": 120,  # [s*2]
-            "ego_spacing": 2,
-            "vehicles_density": 0.4,
+            "ego_spacing": 1,
+            "vehicles_density": 0.5,
             "collision_reward": -3,              # The reward received when colliding with a vehicle.
             "km_goal_reward": 1,
             "right_lane_reward": 0.2,            # The reward received when driving on the right-most lanes, linearly mapped to
@@ -72,9 +72,9 @@ class DecisionMakingEnv(AbstractEnv):
         return config
 
     def _reset(self) -> None:
-        w = self.vehicles_distribution()
+        # w = self.vehicles_distribution()
         # self.c = 0
-        # w = [0, 0.5, 0.5]
+        w = [0.1, 0.4, 0.5]
 
         self._create_road()
         self._create_vehicles(w)
@@ -157,8 +157,8 @@ class DecisionMakingEnv(AbstractEnv):
         # print(f"\ndistance to td reward {self.config['distance_reward'] * km_travelled}")
         # collision_index = int(utils.lmap(abs(self.steps - self.config['duration']), [0,self.config['duration']], [2,0]))
         # Use forward speed rather than speed, see https://github.com/eleurent/highway-env/issues/268
-        forward_speed = self.vehicle.speed * np.cos(self.vehicle.heading)
-        scaled_speed = utils.lmap(forward_speed, self.config["reward_speed_range"], [0, 1])
+        # forward_speed = self.vehicle.speed * np.cos(self.vehicle.heading)
+        scaled_speed = utils.lmap(self.vehicle.speed, self.config["reward_speed_range"], [0, 1])
         # negative_scaled_speed = utils.lmap(forward_speed, [0, self.config["reward_speed_range"][0]], [-1, 0])
 
         # print(f'dist rew: {self.config["distance_reward"] * km_travelled}')
@@ -192,8 +192,8 @@ class DecisionMakingEnv(AbstractEnv):
             #     + self.km_goal_reward \
             #     + self.collision_reward
                     
-        # print(f"\nreward: {reward}, \ndense rewards:\n\trml reward: {self.rml_reward},\n\thigh speed reward: {self.high_speed_reward}\
-        #     \nsparse rewards:\n\tcollision reward 1: {self.collision_reward}, \n\t2: ", self.config["collision_reward"] * self.vehicle.crashed)
+        print(f"\nreward: {reward}, \ndense rewards:\n\trml reward: {self.rml_reward},\n\thigh speed reward: {self.high_speed_reward}\
+            \nsparse rewards:\n\tcollision reward 1: {self.collision_reward}, \n\t2: ", self.config["collision_reward"] * self.vehicle.crashed)
             
         reward = 0 if not self.vehicle.on_road else reward
             
