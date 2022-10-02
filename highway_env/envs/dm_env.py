@@ -192,8 +192,8 @@ class DecisionMakingEnv(AbstractEnv):
             #     + self.km_goal_reward \
             #     + self.collision_reward
                     
-        print(f"\nreward: {reward}, \ndense rewards:\n\trml reward: {self.rml_reward},\n\thigh speed reward: {self.high_speed_reward}\
-            \nsparse rewards:\n\tcollision reward 1: {self.collision_reward}, \n\t2: ", self.config["collision_reward"] * self.vehicle.crashed)
+        # print(f"\nreward: {reward}, \ndense rewards:\n\trml reward: {self.rml_reward},\n\thigh speed reward: {self.high_speed_reward}\
+        #     \nsparse rewards:\n\tcollision reward 1: {self.collision_reward}, \n\t2: ", self.config["collision_reward"] * self.vehicle.crashed)
             
         reward = 0 if not self.vehicle.on_road else reward
             
