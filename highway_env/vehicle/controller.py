@@ -44,12 +44,14 @@ class ControlledVehicle(Vehicle):
                  target_lane_index: LaneIndex = None,
                  target_speed: float = None,
                  phy_action: Union[dict, str] = None,
+                 current_action: Optional[Union[dict, str]] = None,
                  route: Route = None):
         super().__init__(road, position, heading, speed)
         self.target_lane_index = target_lane_index or self.lane_index
         self.target_speed = target_speed or self.speed
         self.route = route
         self.phy_action = phy_action
+        self.current_action = current_action
 
     @classmethod
     def create_from(cls, vehicle: "ControlledVehicle") -> "ControlledVehicle":
@@ -94,19 +96,23 @@ class ControlledVehicle(Vehicle):
         self.follow_road()
         if action == "FASTER":
             self.target_speed += self.DELTA_SPEED
+            # self.current_action = "FASTER"
         elif action == "SLOWER":
             self.target_speed -= self.DELTA_SPEED
+            # self.current_action = "SLOWER"
         elif action == "LANE_RIGHT":
             _from, _to, _id = self.target_lane_index
             target_lane_index = _from, _to, np.clip(_id + 1, 0, len(self.road.network.graph[_from][_to]) - 1)
             if self.road.network.get_lane(target_lane_index).is_reachable_from(self.position):
                 self.target_lane_index = target_lane_index
+            # self.current_action = "LANE_RIGHT"
         elif action == "LANE_LEFT":
             _from, _to, _id = self.target_lane_index
             target_lane_index = _from, _to, np.clip(_id - 1, 0, len(self.road.network.graph[_from][_to]) - 1)
             if self.road.network.get_lane(target_lane_index).is_reachable_from(self.position):
                 self.target_lane_index = target_lane_index
-                
+            # self.current_action = "LANE_LEFT"
+                            
         if self.phy_action:
             action = self.phy_action if action == "ACC" else \
                 {"steering": self.steering_control(self.target_lane_index),
@@ -226,6 +232,8 @@ class MDPVehicle(ControlledVehicle):
                  target_lane_index: Optional[LaneIndex] = None,
                  target_speed: Optional[float] = None,
                  target_speeds: Optional[Vector] = None,
+                 current_action: Optional[Union[dict, str]] = None,
+                 throttle: Optional[float] = 0.0,
                  route: Optional[Route] = None) -> None:
         """
         Initializes an MDPVehicle
@@ -239,10 +247,12 @@ class MDPVehicle(ControlledVehicle):
         :param target_speeds: the discrete list of speeds the vehicle is able to track, through faster/slower actions
         :param route: the planned route of the vehicle, to handle intersections
         """
-        super().__init__(road, position, heading, speed, target_lane_index, target_speed, route)
+        super().__init__(road, position, heading, speed, target_lane_index, target_speed, current_action, route)
         self.target_speeds = np.array(target_speeds) if target_speeds is not None else self.DEFAULT_TARGET_SPEEDS
         self.speed_index = self.speed_to_index(self.target_speed)
         self.target_speed = self.index_to_speed(self.speed_index)
+        self.current_action = current_action
+        self.throttle = throttle
 
     def act(self, action: Union[dict, str] = None) -> None:
         """
@@ -255,8 +265,10 @@ class MDPVehicle(ControlledVehicle):
         """
         if action == "FASTER":
             self.speed_index = self.speed_to_index(self.speed) + 1
+            # self.current_action = "FASTER"
         elif action == "SLOWER":
             self.speed_index = self.speed_to_index(self.speed) - 5
+            # self.current_action = "SLOWER"
         else:
             super().act(action)
 
@@ -328,6 +340,10 @@ class MDPVehicle(ControlledVehicle):
                 if (t % int(trajectory_timestep / dt)) == 0:
                     states.append(copy.deepcopy(v))
         return states
+    
+    def step(self, dt: float) -> None:
+        self.throttle = self.speed_control(self.target_speed)
+        super().step(dt)
     
 
 ##### Thesis add-on #####

@@ -43,10 +43,11 @@ class JAMDecisionMakingEnv(AbstractEnv):
         config = super().default_config()
         config.update({
             "observation": {
-                "type": "Kinematics"
+                "type": "Kinematics",
+                "vehicles_count": 8
             },
             "action": {
-                "type": "DecisionMakingAction",
+                "type": "DiscreteMetaAction",
             },
             "lanes_count": 3,
             "vehicles_count": 35,  # curriculum learning su lanes e npc-vehicles
