@@ -289,6 +289,6 @@ urllib3==1.26.3
 watchdog==1.0.2
 wcwidth==0.2.5
 webencodings==0.5.1
-Werkzeug==2.0.3
+Werkzeug==2.2.3
 widgetsnbextension==3.6.0
 zipp==3.4.0
