@@ -161,7 +161,7 @@ urllib3==1.26.9
 watchdog==1.0.2
 wcwidth==0.2.5
 webencodings==0.5.1
-Werkzeug==2.1.2
+Werkzeug==2.2.3
 widgetsnbextension==3.6.0
 win-inet-pton @ file:///C:/ci/win_inet_pton_1605306167264/work
 wincertstore==0.2
