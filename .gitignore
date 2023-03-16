@@ -21,8 +21,7 @@ _build
 
 # Outputs
 **/out/*
-
-
+training_output/
 
 
 

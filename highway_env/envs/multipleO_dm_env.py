@@ -47,11 +47,10 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
         config = super().default_config()
         config.update({
             "observation": {
-                "type": "Kinematics",
-                "vehicles_count": 8
+                "type": "Kinematics"
             },
             "action": {
-                "type": "DiscreteMetaAction",
+                "type": "DecisionMakingAction",
             },
             "lanes_count": 2,
             # "vehicles_count": 5,              # curriculum learning on npc-vehicles

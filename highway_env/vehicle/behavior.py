@@ -9,6 +9,7 @@ from highway_env.vehicle.controller import ControlledVehicle, DecisionMakingVehi
 from highway_env import utils
 from highway_env.vehicle.kinematics import Vehicle
 from highway_env.pid import PID
+from stable_baselines3 import PPO
 
 
 class IDMVehicle(ControlledVehicle):
