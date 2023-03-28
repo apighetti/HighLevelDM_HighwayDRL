@@ -155,6 +155,7 @@ docs/_build/
 target/
 
 # Jupyter Notebook
+RL_notebooks/
 
 # IPython
 
@@ -288,3 +289,7 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.toptal.com/developers/gitignore/api/windows,macos,visualstudiocode,jupyternotebooks,python
+
+# Exploitation videos and training output
+training_output/
+exploitation/

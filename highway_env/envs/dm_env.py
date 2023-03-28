@@ -59,7 +59,7 @@ class DecisionMakingEnv(AbstractEnv):
             "initial_lane_id": None,
             "duration": 120,  # [s*2]
             "ego_spacing": 1,
-            "vehicles_density": 0.4,
+            "vehicles_density": 0.8,
             "collision_reward": -0.1,              # The reward received when colliding with a vehicle.
             "km_goal_reward": 1,
             "right_lane_reward": 0,            # The reward received when driving on the right-most lanes, linearly mapped to
