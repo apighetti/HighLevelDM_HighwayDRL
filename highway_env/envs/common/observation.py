@@ -109,7 +109,7 @@ class TimeToCollisionObservation(ObservationType):
 
     def space(self) -> spaces.Space:
         try:
-            return spaces.Box(shape=self.observe().shape, low=0, high=1, dtype=np.float32)
+            return spaces.Box(shape=self.observe().shape, low=0, high=1, dtype=float)
         except AttributeError:
             return spaces.Space()
 
@@ -131,7 +131,7 @@ class TimeToCollisionObservation(ObservationType):
         v0 = grid.shape[0] + self.observer_vehicle.speed_index - obs_speeds // 2
         vf = grid.shape[0] + self.observer_vehicle.speed_index + obs_speeds // 2
         clamped_grid = padded_grid[v0:vf + 1, :, :]
-        return clamped_grid.astype(np.float32)
+        return clamped_grid.astype(float)
 
 
 class KinematicObservation(ObservationType):
@@ -174,7 +174,7 @@ class KinematicObservation(ObservationType):
         self.observe_intentions = observe_intentions
 
     def space(self) -> spaces.Space:
-        return spaces.Box(shape=(self.vehicles_count,  len(self.features)), low=-np.inf, high=np.inf, dtype=np.float32)
+        return spaces.Box(shape=(self.vehicles_count,  len(self.features)), low=-np.inf, high=np.inf, dtype=float)
 
     def normalize_obs(self, df: pd.DataFrame) -> pd.DataFrame:
         """
@@ -266,7 +266,7 @@ class OccupancyGridObservation(ObservationType):
         self.features = features if features is not None else self.FEATURES
         self.grid_size = np.array(grid_size) if grid_size is not None else np.array(self.GRID_SIZE)
         self.grid_step = np.array(grid_step) if grid_step is not None else np.array(self.GRID_STEP)
-        grid_shape = np.asarray(np.floor((self.grid_size[:, 1] - self.grid_size[:, 0]) / self.grid_step), dtype=np.int)
+        grid_shape = np.asarray(np.floor((self.grid_size[:, 1] - self.grid_size[:, 0]) / self.grid_step), dtype=int)
         self.grid = np.zeros((len(self.features), *grid_shape))
         self.features_range = features_range
         self.absolute = absolute
@@ -278,7 +278,7 @@ class OccupancyGridObservation(ObservationType):
         if self.as_image:
             return spaces.Box(shape=self.grid.shape, low=0, high=255, dtype=np.uint8)
         else:
-            return spaces.Box(shape=self.grid.shape, low=-np.inf, high=np.inf, dtype=np.float32)
+            return spaces.Box(shape=self.grid.shape, low=-np.inf, high=np.inf, dtype=float)
 
     def normalize(self, df: pd.DataFrame) -> pd.DataFrame:
         """
@@ -421,9 +421,9 @@ class KinematicsGoalObservation(KinematicObservation):
         try:
             obs = self.observe()
             return spaces.Dict(dict(
-                desired_goal=spaces.Box(-np.inf, np.inf, shape=obs["desired_goal"].shape, dtype=np.float64),
-                achieved_goal=spaces.Box(-np.inf, np.inf, shape=obs["achieved_goal"].shape, dtype=np.float64),
-                observation=spaces.Box(-np.inf, np.inf, shape=obs["observation"].shape, dtype=np.float64),
+                desired_goal=spaces.Box(-np.inf, np.inf, shape=obs["desired_goal"].shape, dtype=float),
+                achieved_goal=spaces.Box(-np.inf, np.inf, shape=obs["achieved_goal"].shape, dtype=float),
+                observation=spaces.Box(-np.inf, np.inf, shape=obs["observation"].shape, dtype=float),
             ))
         except AttributeError:
             return spaces.Space()
@@ -455,7 +455,7 @@ class AttributesObservation(ObservationType):
         try:
             obs = self.observe()
             return spaces.Dict({
-                attribute: spaces.Box(-np.inf, np.inf, shape=obs[attribute].shape, dtype=np.float64)
+                attribute: spaces.Box(-np.inf, np.inf, shape=obs[attribute].shape, dtype=float)
                 for attribute in self.attributes
             })
         except AttributeError:
@@ -562,7 +562,7 @@ class LidarObservation(ObservationType):
 
     def space(self) -> spaces.Space:
         high = 1 if self.normalize else self.maximum_range
-        return spaces.Box(shape=(self.cells, 2), low=-high, high=high, dtype=np.float32)
+        return spaces.Box(shape=(self.cells, 2), low=-high, high=high, dtype=float)
 
     def observe(self) -> np.ndarray:
         obs = self.trace(self.observer_vehicle.position, self.observer_vehicle.velocity).copy()

@@ -111,7 +111,7 @@ class ContinuousAction(ActionType):
         self.last_action = np.zeros(self.size)
 
     def space(self) -> spaces.Box:
-        return spaces.Box(-1., 1., shape=(self.size,), dtype=np.float32)
+        return spaces.Box(-1., 1., shape=(self.size,), dtype=float)
 
     @property
     def vehicle_class(self) -> Callable:
