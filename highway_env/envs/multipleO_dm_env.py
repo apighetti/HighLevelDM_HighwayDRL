@@ -60,7 +60,7 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
             "vehicles_density": 0.5,
             "offroad_terminal": False,
             "enable_npc_lane_change": False,
-            
+                        
             "collision_reward": -10,
             "km_sparse_reward": 10
         })
@@ -145,10 +145,10 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
         self.final_reward = 0
         
         self.terminal = False
-        
+                       
         self.total_speed += self.vehicle.speed
         self.km_travelled = utils.lmap(round(self.total_speed,3), [0,36*self.tot_duration], [0,1])
-
+        
         if self._is_terminal():
             self.terminal = True
             self.collision_reward = self.config["collision_reward"] * self.vehicle.crashed
@@ -164,13 +164,15 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
                                            [self.config["collision_reward"], self.config["km_sparse_reward"]],
                                            [0,1])
             
-            # Reset counters
+            # Reset counters if terminal
             self.total_speed = 0
             self.km_travelled = 0
+            
         else:
             self.final_reward = 0
             
         self.final_reward = 0 if not self.vehicle.on_road else self.final_reward
+        # print("rml reward:", self.rml_reward, "collision reward:", self.collision_reward, "final reward:", self.final_reward)
         return self.final_reward
         
     def random_action(self):

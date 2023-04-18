@@ -90,7 +90,7 @@ class EnvViewer(object):
             if event.type == pygame.QUIT:
                 self.env.close()
             self.sim_surface.handle_event(event)
-            if self.env.action_type:
+            if self.env.action_type and self.env.config['manual_control']:
                 EventHandler.handle_event(self.env.action_type, event)
 
     def display(self) -> None:

@@ -12,7 +12,7 @@ from highway_env.vehicle.controller import ControlledVehicle
 from highway_env.vehicle.kinematics import Vehicle
 from highway_env.vehicle.objects import LaneIndex
 
-SPACINGS = [1, 2]
+SPACINGS = [1,2]
 NUM_NPCS = np.arange(15,20)
 
 class DecisionMakingEnv(AbstractEnv):
@@ -57,14 +57,14 @@ class DecisionMakingEnv(AbstractEnv):
             "duration": 120,  # [s*2]
             "initial_lane_id": None,
             "ego_spacing": 2,
-            "vehicles_density": 0.7,
+            "vehicles_density": 1,
             "offroad_terminal": False,
             
             "collision_reward": -10,
-            "km_sparse_reward": 1,
-            "rml_reward": 0.5,
-            "km_dense_reward": 0.6,
-            "high_speed_reward": 0.1,
+            # "km_sparse_reward": 10,
+            "rml_reward": 0.3,
+            # "km_dense_reward": 0.6,
+            "high_speed_reward": 0.6,
             "reward_speed_range": [32, 36]
         })
         return config
@@ -73,23 +73,6 @@ class DecisionMakingEnv(AbstractEnv):
         w = [0.1, 0.4, 0.5]
         self._create_road()
         self._create_vehicles(w)
-              
-        # Reset rewards
-        self.high_speed_reward = 0
-        self.rml_reward = 0
-        self.km_dense_reward = 0
-        self.dense_reward = 0
-        
-        self.collision_reward = 0
-        self.km_sparse_reward = 0
-        self.sparse_reward = 0
-        
-        self.final_reward = 0
-        
-        # Reset counters
-        self.total_speed = 0
-        self.km_travelled = 0
-        self.terminal = False
 
     def _create_road(self) -> None:
         """Create a road composed of straight adjacent lanes."""
@@ -149,9 +132,23 @@ class DecisionMakingEnv(AbstractEnv):
         :param action: the last action performed
         :return: the corresponding reward
         """
+        
+        # Reset rewards
+        self.high_speed_reward = 0
+        self.rml_reward = 0
+        self.km_dense_reward = 0
+        self.dense_reward = 0
+        
+        self.collision_reward = 0
+        self.km_sparse_reward = 0
+        self.sparse_reward = 0
+        
+        self.final_reward = 0
+        
+        self.terminal = False
                     
-        self.total_speed += self.vehicle.speed
-        self.km_travelled = utils.lmap(round(self.total_speed,3), [0,36*self.tot_duration], [0,1])
+        # self.total_speed += self.vehicle.speed
+        # self.km_travelled = utils.lmap(round(self.total_speed,3), [0,36*self.tot_duration], [0,1])
         
         neighbours = self.road.network.all_side_lanes(self.vehicle.lane_index)
         lane = self.vehicle.target_lane_index[2] if isinstance(self.vehicle, ControlledVehicle) \
@@ -166,25 +163,29 @@ class DecisionMakingEnv(AbstractEnv):
         self.dense_reward = \
             + self.high_speed_reward \
             + self.rml_reward
+        
+        if self._is_terminal():
+            self.terminal = True
+            self.collision_reward = self.config["collision_reward"] * self.vehicle.crashed
+            # self.km_sparse_reward = self.config["km_sparse_reward"] * self.km_travelled if not self.vehicle.crashed else 0
             
+            self.sparse_reward = \
+                + self.collision_reward
+                # + self.km_sparse_reward
+                
+            # Reset counters
+            # self.total_speed = 0
+            # self.km_travelled = 0
+
         self.dense_reward = utils.lmap(self.dense_reward,
                 [0,
                  self.config["high_speed_reward"] + self.config["rml_reward"]],
                 [0, 1]) # DA VEDERE SE VA
         
-        if self._is_terminal():
-            self.terminal = True
-            self.collision_reward = self.config["collision_reward"] * self.vehicle.crashed
-            self.km_sparse_reward = self.config["km_sparse_reward"] * self.km_travelled if not self.vehicle.crashed else 0
-            
-            self.sparse_reward = \
-                + self.collision_reward \
-                + self.km_sparse_reward
-
         self.final_reward = self.dense_reward + self.sparse_reward
         
         self.final_reward = 0 if not self.vehicle.on_road else self.final_reward
-                
+        # print("high speed reward:", self.high_speed_reward,"rml reward:", self.rml_reward, "collision reward:", self.collision_reward, "final reward:", self.final_reward)
         return self.final_reward
         
     def random_action(self):
