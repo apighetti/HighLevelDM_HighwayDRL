@@ -52,11 +52,12 @@ class DecisionMakingEnv(AbstractEnv):
                 "type": "DecisionMakingAction",
             },
             "lanes_count": 3,
+            "policy_frequency": 1,
             "controlled_vehicles": 1,
             "duration": 120,  # [s*2]
             "initial_lane_id": None,
-            "ego_spacing": 2,
-            "vehicles_density": 0.8,
+            "ego_spacing": 1,
+            "vehicles_density": 0.6,
             "offroad_terminal": False,
             
             "collision_reward": -3,
@@ -64,7 +65,7 @@ class DecisionMakingEnv(AbstractEnv):
             "rml_reward": 0.2,
             # "km_dense_reward": 0.6,
             "high_speed_reward": 0.4,
-            "reward_speed_range": [32, 36]
+            "reward_speed_range": [30, 36]
         })
         return config
 
