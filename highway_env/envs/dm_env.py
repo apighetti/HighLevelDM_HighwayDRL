@@ -12,7 +12,6 @@ from highway_env.vehicle.controller import ControlledVehicle
 from highway_env.vehicle.kinematics import Vehicle
 from highway_env.vehicle.objects import LaneIndex
 
-SPACINGS = [1,2]
 NUM_NPCS = np.arange(15,20)
 
 class DecisionMakingEnv(AbstractEnv):
@@ -57,10 +56,10 @@ class DecisionMakingEnv(AbstractEnv):
             "duration": 120,  # [s*2]
             "initial_lane_id": None,
             "ego_spacing": 2,
-            "vehicles_density": 1,
+            "vehicles_density": 0.8,
             "offroad_terminal": False,
             
-            "collision_reward": -10,
+            "collision_reward": -3,
             # "km_sparse_reward": 10,
             "rml_reward": 0.2,
             # "km_dense_reward": 0.6,
@@ -101,8 +100,7 @@ class DecisionMakingEnv(AbstractEnv):
     def _create_vehicles(self, vehicle_distribution) -> None:
         """Create some new random vehicles of a given type, and add them on the road."""
         npcs_num = random.choice(NUM_NPCS)
-        sp = random.choice(SPACINGS)
-   
+           
         other_vehicles_type = utils.class_from_path(self.config["other_vehicles_type"])
         other_per_controlled = near_split(npcs_num, num_bins=self.config["controlled_vehicles"])
 
@@ -121,7 +119,7 @@ class DecisionMakingEnv(AbstractEnv):
             for i in range(others):
                 aux = random.choices(range(0,self.config['lanes_count']), weights = vehicle_distribution, k=1)[0]
                 vehicle = other_vehicles_type.create_random(self.road, speed = self.get_npc_speed(aux),\
-                    lane_id = aux, spacing=sp / self.config["vehicles_density"]) #edit NPC
+                    lane_id = aux, spacing=1 / self.config["vehicles_density"]) #edit NPC
                 vehicle.randomize_behavior()
                 self.road.vehicles.append(vehicle)
 
@@ -169,8 +167,7 @@ class DecisionMakingEnv(AbstractEnv):
             self.collision_reward = self.config["collision_reward"] * self.vehicle.crashed
             # self.km_sparse_reward = self.config["km_sparse_reward"] * self.km_travelled if not self.vehicle.crashed else 0
             
-            self.sparse_reward = \
-                + self.collision_reward
+            self.sparse_reward = self.collision_reward
                 # + self.km_sparse_reward
                 
             # Reset counters
