@@ -162,23 +162,25 @@ class DecisionMakingEnv(AbstractEnv):
         self.dense_reward = \
             + self.high_speed_reward \
             + self.rml_reward
-        
-        if self._is_terminal():
-            self.terminal = True
-            self.collision_reward = self.config["collision_reward"] * self.vehicle.crashed
-            # self.km_sparse_reward = self.config["km_sparse_reward"] * self.km_travelled if not self.vehicle.crashed else 0
-            
-            self.sparse_reward = self.collision_reward
-                # + self.km_sparse_reward
-                
-            # Reset counters
-            # self.total_speed = 0
-            # self.km_travelled = 0
 
         self.dense_reward = utils.lmap(self.dense_reward,
                 [0,
                  self.config["high_speed_reward"] + self.config["rml_reward"]],
                 [0, 0.3]) # DA VEDERE SE VA
+        
+        if self._is_terminal():
+            self.terminal = True
+            # self.km_sparse_reward = self.config["km_sparse_reward"] * self.km_travelled if not self.vehicle.crashed else 0
+            
+                # + self.km_sparse_reward
+                
+            # Reset counters
+            # self.total_speed = 0
+            # self.km_travelled = 0
+        
+        self.collision_reward = self.config["collision_reward"] * self.vehicle.crashed
+
+        self.sparse_reward = self.collision_reward
         
         self.final_reward = self.dense_reward + self.sparse_reward
         
