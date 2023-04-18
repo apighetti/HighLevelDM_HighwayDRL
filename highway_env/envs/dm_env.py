@@ -62,9 +62,9 @@ class DecisionMakingEnv(AbstractEnv):
             
             "collision_reward": -10,
             # "km_sparse_reward": 10,
-            "rml_reward": 0.3,
+            "rml_reward": 0.2,
             # "km_dense_reward": 0.6,
-            "high_speed_reward": 0.6,
+            "high_speed_reward": 0.4,
             "reward_speed_range": [32, 36]
         })
         return config
@@ -180,7 +180,7 @@ class DecisionMakingEnv(AbstractEnv):
         self.dense_reward = utils.lmap(self.dense_reward,
                 [0,
                  self.config["high_speed_reward"] + self.config["rml_reward"]],
-                [0, 1]) # DA VEDERE SE VA
+                [0, 0.3]) # DA VEDERE SE VA
         
         self.final_reward = self.dense_reward + self.sparse_reward
         
