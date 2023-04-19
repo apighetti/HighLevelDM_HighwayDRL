@@ -54,7 +54,7 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
             },
             "lanes_count": 2,
             "controlled_vehicles": 1,
-            "duration": 120,  # [s*2]
+            "duration": 60,  # [s*2]
             "initial_lane_id": None,
             "ego_spacing": 2,
             "vehicles_density": 0.5,
@@ -160,9 +160,9 @@ class MultipleOvertakeDecisionMakingEnv(AbstractEnv):
             
             self.final_reward = self.sparse_reward
             
-            self.final_reward = utils.lmap(self.final_reward,
-                                           [self.config["collision_reward"], self.config["km_sparse_reward"]],
-                                           [0,1])
+            # self.final_reward = utils.lmap(self.final_reward,
+            #                                [self.config["collision_reward"], self.config["km_sparse_reward"]],
+            #                                [0,1])
             
             # Reset counters if terminal
             self.total_speed = 0

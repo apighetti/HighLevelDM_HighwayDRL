@@ -54,10 +54,10 @@ class DecisionMakingEnv(AbstractEnv):
             "lanes_count": 3,
             "policy_frequency": 1,
             "controlled_vehicles": 1,
-            "duration": 120,  # [s*2]
+            "duration": 60,  # [s*2]
             "initial_lane_id": None,
             "ego_spacing": 1,
-            "vehicles_density": 0.6,
+            "vehicles_density": 0.5,
             "offroad_terminal": False,
             
             "collision_reward": -3,
@@ -79,18 +79,6 @@ class DecisionMakingEnv(AbstractEnv):
         
         self.road = Road(network=RoadNetwork.straight_road_network(self.config["lanes_count"], speed_limit=36),
                          np_random=self.np_random, record_history=self.config["show_trajectories"])
-
-    def vehicles_distribution(self):
-        '''Create array of weights that will be used to spawn vehicles.'''
-        
-        n = self.config['lanes_count']
-        lanes_list = range(0,n)
-        weights = [None]*n
-        
-        for i in lanes_list: 
-            weights[i] = (lanes_list[i])*(10**i)+1
-            
-        return weights
     
     def get_npc_speed(self, aux):
         '''Compute speed of a spawned vehicle according to its position.'''
@@ -131,7 +119,7 @@ class DecisionMakingEnv(AbstractEnv):
         :param action: the last action performed
         :return: the corresponding reward
         """
-        
+
         # Reset rewards
         self.high_speed_reward = 0
         self.rml_reward = 0
@@ -159,14 +147,21 @@ class DecisionMakingEnv(AbstractEnv):
         scaled_speed = utils.lmap(forward_speed, self.config["reward_speed_range"], [0, 1])
         self.high_speed_reward = self.config["high_speed_reward"] * np.clip(scaled_speed, 0, 1)
         
-        self.dense_reward = \
+        
+        self.final_reward = self.dense_reward = \
             + self.high_speed_reward \
             + self.rml_reward
-
-        self.dense_reward = utils.lmap(self.dense_reward,
+                       
+        self.final_reward = utils.lmap(self.final_reward,
                 [0,
                  self.config["high_speed_reward"] + self.config["rml_reward"]],
-                [0, 0.3]) # DA VEDERE SE VA
+                [0, 0.1]) # DA VEDERE SE VA
+        
+        self.collision_reward = self.config["collision_reward"] * self.vehicle.crashed
+
+        self.sparse_reward = self.collision_reward
+        
+        self.final_reward += self.sparse_reward
         
         if self._is_terminal():
             self.terminal = True
@@ -177,12 +172,6 @@ class DecisionMakingEnv(AbstractEnv):
             # Reset counters
             # self.total_speed = 0
             # self.km_travelled = 0
-        
-        self.collision_reward = self.config["collision_reward"] * self.vehicle.crashed
-
-        self.sparse_reward = self.collision_reward
-        
-        self.final_reward = self.dense_reward + self.sparse_reward
         
         self.final_reward = 0 if not self.vehicle.on_road else self.final_reward
         # print("high speed reward:", self.high_speed_reward,"rml reward:", self.rml_reward, "collision reward:", self.collision_reward, "final reward:", self.final_reward)
