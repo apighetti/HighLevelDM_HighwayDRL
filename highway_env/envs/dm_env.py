@@ -52,6 +52,7 @@ class DecisionMakingEnv(AbstractEnv):
                 "type": "DecisionMakingAction",
             },
             "lanes_count": 3,
+            "simulation_frequency": 5,
             "policy_frequency": 1,
             "controlled_vehicles": 1,
             "duration": 60,  # [s*2]
@@ -60,11 +61,11 @@ class DecisionMakingEnv(AbstractEnv):
             "vehicles_density": 0.5,
             "offroad_terminal": False,
             
-            "collision_reward": -3,
+            "collision_reward": -10,
             # "km_sparse_reward": 10,
-            "rml_reward": 0.2,
+            "rml_reward": 0.4,
             # "km_dense_reward": 0.6,
-            "high_speed_reward": 0.4,
+            "high_speed_reward": 0.1,
             "reward_speed_range": [30, 36]
         })
         return config
@@ -152,7 +153,7 @@ class DecisionMakingEnv(AbstractEnv):
             + self.high_speed_reward \
             + self.rml_reward
                        
-        self.final_reward = utils.lmap(self.final_reward,
+        self.final_reward = self.dense_reward = utils.lmap(self.final_reward,
                 [0,
                  self.config["high_speed_reward"] + self.config["rml_reward"]],
                 [0, 0.1]) # DA VEDERE SE VA

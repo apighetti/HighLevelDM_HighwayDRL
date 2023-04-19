@@ -15,7 +15,7 @@ class TensorboardCallback(BaseCallback):
         
         self.cumulative_reward = 0
         
-        self.num_episodes = 10
+        self.num_episodes = 50
         self.episodes_count = 0
         self.episode_steps = 0
         self.episodes_lens = np.zeros(self.num_episodes)

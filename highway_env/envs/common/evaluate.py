@@ -24,12 +24,14 @@ class PrintMetrics():
             mean_deceleration, 3), decision_change_num, left_lane_change_num, right_lane_change_num], name=curr_episode_num, index=self.episode_df.columns)
 
         self.episode_df = self.episode_df.append(series)
+        
+        # self.episode_df = pd.concat([self.episode_df, pd.DataFrame.from_records(series)])
 
-        print(f"\nepisode {curr_episode_num}: {env_name} ended, metrics:\
-             \n\tepisode duration: {round(episode_duration)} seconds,\n\tcollision? {'YES' if collision else 'NO'} \n\tkm travelled: {round(km_travelled,2)},\
-             \n\tdecision changes: {decision_change_num}, \n\tmean speed: {round(mean_speed,2)} km/h, \n\tmean acceleration: {round(mean_acceleration,3)} m/s, \n\tmean deceleration: {round(mean_deceleration,3)} m/s,\
-             \n\tdecision change rate: {round(decision_change_rate, 2)}, \n\tleft lane changes: {left_lane_change_num}, \n\tleft lane change rate: {round(left_lane_change_rate, 2)}\
-             \n\tright lane changes: {right_lane_change_num}, \n\tright lane change rate: {round(right_lane_change_rate, 2)}")
+        # print(f"\nepisode {curr_episode_num}: {env_name} ended, metrics:\
+        #      \n\tepisode duration: {round(episode_duration)} seconds,\n\tcollision? {'YES' if collision else 'NO'} \n\tkm travelled: {round(km_travelled,2)},\
+        #      \n\tdecision changes: {decision_change_num}, \n\tmean speed: {round(mean_speed,2)} km/h, \n\tmean acceleration: {round(mean_acceleration,3)} m/s, \n\tmean deceleration: {round(mean_deceleration,3)} m/s,\
+        #      \n\tdecision change rate: {round(decision_change_rate, 2)}, \n\tleft lane changes: {left_lane_change_num}, \n\tleft lane change rate: {round(left_lane_change_rate, 2)}\
+        #      \n\tright lane changes: {right_lane_change_num}, \n\tright lane change rate: {round(right_lane_change_rate, 2)}")
 
     def printRecap(self, path, csv_id) -> None:
 
