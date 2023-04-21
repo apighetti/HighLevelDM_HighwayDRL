@@ -14,11 +14,12 @@ class PrintMetrics():
         self.episode_df = pd.DataFrame(columns=header_ep)
         self.episode_df.index.name = 'episode'
 
-    def printEpisode(self, env_name, km_travelled, decision_change_num, decision_change_rate,
-                     left_lane_change_num, left_lane_change_rate, right_lane_change_num, right_lane_change_rate,
+    def saveEpisodeData(self, env_name, km_travelled, decision_change_num, left_lane_change_num, right_lane_change_num, 
                      mean_speed, mean_acceleration, mean_deceleration, collision, episode_duration, curr_episode_num) -> None:
 
         self.env_names.append(env_name)
+        
+        self.collisions_num += collision
         
         series = pd.Series([env_name, round(episode_duration), 1 if collision else 0, round(km_travelled, 2), round(mean_speed, 2), round(mean_acceleration, 3), round(
             mean_deceleration, 3), decision_change_num, left_lane_change_num, right_lane_change_num], name=curr_episode_num, index=self.episode_df.columns)
@@ -58,3 +59,4 @@ class PrintMetrics():
 
         self.episode_df.to_csv(path + f"/episode_data_{csv_id}.csv")
         recap_df.to_csv(path + f"/recap_data_{csv_id}.csv")
+        print("total collision number:", self.collisions_num)

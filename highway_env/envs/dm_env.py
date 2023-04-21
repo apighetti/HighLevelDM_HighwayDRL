@@ -63,9 +63,9 @@ class DecisionMakingEnv(AbstractEnv):
             
             "collision_reward": -10,
             # "km_sparse_reward": 10,
-            "rml_reward": 0.4,
+            "rml_reward": 0.8,
             # "km_dense_reward": 0.6,
-            "high_speed_reward": 0.1,
+            "high_speed_reward": 0.01,
             "reward_speed_range": [30, 36]
         })
         return config
