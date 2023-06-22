@@ -50,11 +50,11 @@ class PrintMetrics():
                                                               overall_mean_deceleration=(
                                                                   'mean_decel', lambda x: np.round(np.mean(x), 3)),
                                                               mean_decision_changes=(
-                                                                  'decision_changes', lambda x: np.round(np.mean(x))),
+                                                                  'decision_changes', lambda x: np.round(np.mean(x), 3)),
                                                               mean_left_lane_changes=(
-                                                                  'left_lane_changes', lambda x: np.round(np.mean(x))),
+                                                                  'left_lane_changes', lambda x: np.round(np.mean(x), 3)),
                                                               mean_right_lane_changes=(
-                                                                  'right_lane_changes', lambda x: np.round(np.mean(x)))
+                                                                  'right_lane_changes', lambda x: np.round(np.mean(x), 3))
                                                               ).round(2)
 
         self.episode_df.to_csv(path + f"/episode_data_{csv_id}.csv")

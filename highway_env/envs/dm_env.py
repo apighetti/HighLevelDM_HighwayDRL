@@ -46,13 +46,14 @@ class DecisionMakingEnv(AbstractEnv):
         config = super().default_config()
         config.update({
             "observation": {
-                "type": "Kinematics"
+                "type": "Kinematics",
+                "vehicles_count": 7
             },
             "action": {
                 "type": "DecisionMakingAction",
             },
             "lanes_count": 3,
-            "simulation_frequency": 5,
+            "simulation_frequency": 5,    #changed for better evaluation (f.bellotti comment)
             "policy_frequency": 1,
             "controlled_vehicles": 1,
             "duration": 60,  # [s*2]
@@ -61,11 +62,11 @@ class DecisionMakingEnv(AbstractEnv):
             "vehicles_density": 0.5,
             "offroad_terminal": False,
             
-            "collision_reward": -10,
+            "collision_reward": -30,
             # "km_sparse_reward": 10,
             "rml_reward": 0.8,
             # "km_dense_reward": 0.6,
-            "high_speed_reward": 0.01,
+            "high_speed_reward": 0,
             "reward_speed_range": [30, 36]
         })
         return config
