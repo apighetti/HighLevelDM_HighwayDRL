@@ -8,7 +8,7 @@ from highway_env.utils import Vector
 from highway_env.vehicle.dynamics import BicycleVehicle
 from highway_env.vehicle.kinematics import Vehicle
 from highway_env.vehicle.controller import ControlledVehicle, MDPVehicle
-from highway_env.vehicle.behavior import HazardousVehicle, IDMVehicle, LinearVehicle
+from highway_env.vehicle.behavior import HazardousVehicle, IDMVehicle, LinearVehicle, VictimVehicle
 
 if TYPE_CHECKING:
     from highway_env.road.graphics import WorldSurface
@@ -172,6 +172,8 @@ class VehicleGraphics(object):
             color = vehicle.color
         elif vehicle.crashed:
             color = cls.RED
+        elif isinstance(vehicle, VictimVehicle):
+            color = cls.EGO_COLOR
         elif isinstance(vehicle, HazardousVehicle):
             color = cls.YELLOW
         elif isinstance(vehicle, LinearVehicle):
@@ -179,7 +181,7 @@ class VehicleGraphics(object):
         elif isinstance(vehicle, IDMVehicle):
             color = cls.BLUE
         elif isinstance(vehicle, MDPVehicle):
-            color = cls.EGO_COLOR
+            color = cls.PURPLE
         if transparent:
             color = (color[0], color[1], color[2], 30)
         return color

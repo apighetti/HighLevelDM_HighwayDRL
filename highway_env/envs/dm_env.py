@@ -4,15 +4,17 @@ from gym.envs.registration import register
 import numpy as np
 
 from highway_env import utils
-from highway_env.envs.common.abstract import AbstractEnv
+from highway_env.envs.common.abstract import AbstractEnv,Observation
 from highway_env.envs.common.action import Action
 from highway_env.road.road import Road, RoadNetwork
 from highway_env.utils import near_split
 from highway_env.vehicle.controller import ControlledVehicle
 from highway_env.vehicle.kinematics import Vehicle
+from highway_env.vehicle.behavior import VictimVehicle
 from highway_env.vehicle.objects import LaneIndex
+from stable_baselines3 import PPO
 
-NUM_NPCS = np.arange(15,20)
+NUM_NPCS = np.arange(10,15)
 
 class DecisionMakingEnv(AbstractEnv):
     """
@@ -53,7 +55,7 @@ class DecisionMakingEnv(AbstractEnv):
                 "type": "DecisionMakingAction",
             },
             "lanes_count": 3,
-            "simulation_frequency": 5,    #changed for better evaluation (f.bellotti comment)
+            "simulation_frequency": 5,
             "policy_frequency": 1,
             "controlled_vehicles": 1,
             "duration": 60,  # [s*2]
@@ -114,7 +116,6 @@ class DecisionMakingEnv(AbstractEnv):
                 vehicle.randomize_behavior()
                 self.road.vehicles.append(vehicle)
 
-
     def _reward(self, action: Action) -> float:
         """
         The reward is defined to foster driving at high speed, on the rightmost lanes, and to avoid collisions.
@@ -136,9 +137,6 @@ class DecisionMakingEnv(AbstractEnv):
         
         self.terminal = False
                     
-        # self.total_speed += self.vehicle.speed
-        # self.km_travelled = utils.lmap(round(self.total_speed,3), [0,36*self.tot_duration], [0,1])
-        
         neighbours = self.road.network.all_side_lanes(self.vehicle.lane_index)
         lane = self.vehicle.target_lane_index[2] if isinstance(self.vehicle, ControlledVehicle) \
             else self.vehicle.lane_index[2]
@@ -157,7 +155,7 @@ class DecisionMakingEnv(AbstractEnv):
         self.final_reward = self.dense_reward = utils.lmap(self.final_reward,
                 [0,
                  self.config["high_speed_reward"] + self.config["rml_reward"]],
-                [0, 0.1]) # DA VEDERE SE VA
+                [0, 0.1])
         
         self.collision_reward = self.config["collision_reward"] * self.vehicle.crashed
 
@@ -176,7 +174,6 @@ class DecisionMakingEnv(AbstractEnv):
             # self.km_travelled = 0
         
         self.final_reward = 0 if not self.vehicle.on_road else self.final_reward
-        # print("high speed reward:", self.high_speed_reward,"rml reward:", self.rml_reward, "collision reward:", self.collision_reward, "final reward:", self.final_reward)
         return self.final_reward
         
     def random_action(self):
@@ -194,7 +191,78 @@ class DecisionMakingEnv(AbstractEnv):
         """The cost signal is the occurrence of collision."""
         return float(self.vehicle.crashed)
 
+
 register(
     id='dm-env-v0',
     entry_point='highway_env.envs:DecisionMakingEnv',
+)
+       
+
+class MultiAgentDecisionMakingEnv(DecisionMakingEnv):
+    """
+    A variant of the original high-level decision-making environment
+    with a pseudo-multiagent setting to enable adversarial policy training.
+    """        
+
+        
+    @classmethod
+    def default_config(cls) -> dict:
+        config = super().default_config()
+        config.update({
+            "observation": {
+                "type": "PseudoMultiAgentObservation",
+                "observation_config": {
+                    "type": "Kinematics",
+                    "vehicles_count": 7
+                }
+            },
+            "controlled_vehicles": 1,
+            "victim_initial_lane_id": None,
+            "victim_loaded_model": PPO.load('/home/pigo/HighwayDRL/final_models/ppo_standard_200k_FORNO.zip'),
+            "victim_spacing": 1,
+            "vehicles_density": 0.5,
+            
+            "collision_reward": -30,
+            "rml_reward": 0.8,
+            "high_speed_reward": 0,
+            "reward_speed_range": [30, 36]
+        })
+        return config
+    
+    def reset(self) -> Observation:
+        self.obs = super().reset()
+        self.victim_vehicle.update_obs(self.obs[1])
+        return self.obs[0]
+        
+    
+    def _reset(self) -> None:
+        w = [0.1, 0.4, 0.5]
+        self._create_road()
+        self._create_vehicles(w)
+        
+    def _create_vehicles(self, vehicle_distribution) -> None:
+        super()._create_vehicles(vehicle_distribution)
+
+        self.victim_vehicle = VictimVehicle.create_random(self.road,
+                                                    speed=25,
+                                                    lane_id=self.config['victim_initial_lane_id'],
+                                                    spacing=self.config['victim_spacing'])
+        # self.victim_vehicle.victim_model =  self.config['victim_algo'].load(self.config['victim_policy_path'])
+        self.victim_vehicle = VictimVehicle(self.road, [150.0, 4.], self.victim_vehicle.heading,\
+            self.victim_vehicle.speed, victim_model=self.config['victim_loaded_model'])
+        self.road.vehicles.append(self.victim_vehicle)
+            
+    def step(self, action: Action):
+        self.obs, reward, terminal, info = super().step(action)
+        # exit()
+        self.victim_vehicle.update_obs(self.obs[1])
+        
+        return self.obs[0], reward, terminal, info
+
+    def _is_terminal(self) -> bool:
+        return super()._is_terminal() or self.victim_vehicle.crashed
+
+register(
+    id='dm-multi-agent-v0',
+    entry_point='highway_env.envs:MultiAgentDecisionMakingEnv',
 )

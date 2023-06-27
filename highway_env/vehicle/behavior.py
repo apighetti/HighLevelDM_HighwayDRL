@@ -11,7 +11,6 @@ from highway_env.vehicle.kinematics import Vehicle
 from highway_env.pid import PID
 from stable_baselines3 import PPO
 
-
 class IDMVehicle(ControlledVehicle):
     """
     A vehicle using both a longitudinal and a lateral decision policies.
@@ -533,4 +532,44 @@ class HazardousVehicle(DecisionMakingVehicle):
         if(self.step_index == 2):
             action= "SLOWER"
             self.phy_action = None
+        super().act(action)
+        
+class VictimVehicle(DecisionMakingVehicle):
+    def __init__(self,
+                 road: Road,
+                 position: List[float],
+                 heading: float = 0,
+                 speed: float = 0,
+                 target_lane_index: Optional[LaneIndex] = None,
+                 target_speed: Optional[float] = None,
+                 target_speeds: Optional[Vector] = None,
+                 route: Optional[Route] = None,
+                 front_vehicle: Optional[Vehicle] = None,
+                 velocity_integral : Optional[float] = 0.0,
+                 prev_velocity : Optional[float] = 0.0,
+                 acc_flag: Optional[bool] = False,
+                 rml_flag: Optional[bool] = False,
+                 overtake_flag: Optional[bool] = False,
+                 throttle: Optional[float] = 0.0,
+                 timer: Optional[int] = 0,
+                 current_action: Optional[Union[dict, str]] = None,
+                 my_lane: Optional[int] = 0,
+                 obs: Optional[Tuple] = None,
+                 victim_model: PPO = None):
+        super().__init__(road, position, heading, speed, target_lane_index, target_speed, target_speeds, front_vehicle, velocity_integral, prev_velocity, acc_flag, rml_flag, overtake_flag, throttle,route,
+                            current_action, my_lane, timer)
+        self.obs = obs
+        self.victim_model = victim_model
+        
+    def update_obs(self, n_obs):
+        self.obs = n_obs
+        
+    def act(self, action: Union[dict, str] = None):
+        action, _ = self.victim_model.predict(self.obs, deterministic=True)
+        if action == 0:
+            action = "ACC"
+        if action == 1:
+            action = "OVERTAKE"
+        if action == 2:
+            action = "RIGHTMOSTLANE"
         super().act(action)

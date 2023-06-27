@@ -487,6 +487,27 @@ class MultiAgentObservation(ObservationType):
         return tuple(obs_type.observe() for obs_type in self.agents_observation_types)
 
 
+class PseudoMultiAgentObservation(ObservationType):
+    def __init__(self,
+                 env: 'AbstractEnv',
+                 observation_config: dict,
+                 **kwargs) -> None:
+        super().__init__(env)     
+        self.observation_config = observation_config
+        
+        self.learner_obs_type = observation_factory(self.env, self.observation_config)
+        self.victim_obs_type = observation_factory(self.env, self.observation_config)
+        if self.env.controlled_vehicles and self.env.victim_vehicle:
+            self.learner_obs_type.observer_vehicle = self.env.controlled_vehicles[0]
+            self.victim_obs_type.observer_vehicle = self.env.victim_vehicle
+                    
+    def space(self) -> spaces.Space:
+        return spaces.Tuple([self.learner_obs_type.space(), self.victim_obs_type.space()])
+    
+    def observe(self) -> tuple: 
+        return (self.learner_obs_type.observe(),self.victim_obs_type.observe())
+    
+
 class TupleObservation(ObservationType):
     def __init__(self,
                  env: 'AbstractEnv',
@@ -502,7 +523,7 @@ class TupleObservation(ObservationType):
         return tuple(obs_type.observe() for obs_type in self.observation_types)
 
 
-class ExitObservation(KinematicObservation):
+class ExitObservation(ObservationType):
 
     """Specific to exit_env, observe the distance to the next exit lane as part of a KinematicObservation."""
 
@@ -636,6 +657,8 @@ def observation_factory(env: 'AbstractEnv', config: dict) -> ObservationType:
         return AttributesObservation(env, **config)
     elif config["type"] == "MultiAgentObservation":
         return MultiAgentObservation(env, **config)
+    elif config["type"] == "PseudoMultiAgentObservation":
+        return PseudoMultiAgentObservation(env, **config)
     elif config["type"] == "TupleObservation":
         return TupleObservation(env, **config)
     elif config["type"] == "LidarObservation":
