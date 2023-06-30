@@ -555,21 +555,23 @@ class VictimVehicle(DecisionMakingVehicle):
                  current_action: Optional[Union[dict, str]] = None,
                  my_lane: Optional[int] = 0,
                  obs: Optional[Tuple] = None,
-                 victim_model: PPO = None):
+                 victim_model: PPO = None,
+                 victim_action: Optional[int] = 9999):
         super().__init__(road, position, heading, speed, target_lane_index, target_speed, target_speeds, front_vehicle, velocity_integral, prev_velocity, acc_flag, rml_flag, overtake_flag, throttle,route,
                             current_action, my_lane, timer)
         self.obs = obs
         self.victim_model = victim_model
+        self.victim_action = victim_action
         
     def update_obs(self, n_obs):
         self.obs = n_obs
         
     def act(self, action: Union[dict, str] = None):
-        action, _ = self.victim_model.predict(self.obs, deterministic=True)
-        if action == 0:
+        self.victim_action, _ = self.victim_model.predict(self.obs, deterministic=True)
+        if self.victim_action == 0:
             action = "ACC"
-        if action == 1:
+        if self.victim_action == 1:
             action = "OVERTAKE"
-        if action == 2:
+        if self.victim_action == 2:
             action = "RIGHTMOSTLANE"
         super().act(action)

@@ -247,20 +247,26 @@ class MultiAgentDecisionMakingEnv(DecisionMakingEnv):
                                                     speed=25,
                                                     lane_id=self.config['victim_initial_lane_id'],
                                                     spacing=self.config['victim_spacing'])
-        # self.victim_vehicle.victim_model =  self.config['victim_algo'].load(self.config['victim_policy_path'])
         self.victim_vehicle = VictimVehicle(self.road, [150.0, 4.], self.victim_vehicle.heading,\
             self.victim_vehicle.speed, victim_model=self.config['victim_loaded_model'])
         self.road.vehicles.append(self.victim_vehicle)
             
     def step(self, action: Action):
         self.obs, reward, terminal, info = super().step(action)
-        # exit()
         self.victim_vehicle.update_obs(self.obs[1])
-        
         return self.obs[0], reward, terminal, info
-
-    def _is_terminal(self) -> bool:
-        return super()._is_terminal() or self.victim_vehicle.crashed
+    
+    def _reward(self, action: Action) -> float:
+        victim_collision_reward = self.victim_vehicle.crashed * self.config['collision_reward']
+        
+        self.dense_reward = 0
+        
+        self.sparse_reward = victim_collision_reward
+        
+        self.final_reward = self.dense_reward + self.sparse_reward
+        
+        return self.final_reward
+    
 
 register(
     id='dm-multi-agent-v0',

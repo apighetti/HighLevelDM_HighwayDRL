@@ -486,7 +486,6 @@ class MultiAgentObservation(ObservationType):
     def observe(self) -> tuple:
         return tuple(obs_type.observe() for obs_type in self.agents_observation_types)
 
-
 class PseudoMultiAgentObservation(ObservationType):
     def __init__(self,
                  env: 'AbstractEnv',
@@ -502,10 +501,12 @@ class PseudoMultiAgentObservation(ObservationType):
             self.victim_obs_type.observer_vehicle = self.env.victim_vehicle
                     
     def space(self) -> spaces.Space:
-        return spaces.Tuple([self.learner_obs_type.space(), self.victim_obs_type.space()])
+        return spaces.Tuple([self.learner_obs_type.space(), spaces.Discrete(1)])
     
     def observe(self) -> tuple: 
-        return (self.learner_obs_type.observe(),self.victim_obs_type.observe())
+        return (self.learner_obs_type.observe(), self.env.victim_vehicle.victim_action)
+    
+    def victim_observe(self)
     
 
 class TupleObservation(ObservationType):
