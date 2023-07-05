@@ -224,11 +224,14 @@ class MultiAgentDecisionMakingEnv(DecisionMakingEnv):
             },
             "controlled_vehicles": 1,
             "victim_initial_lane_id": None,
-            "victim_loaded_model": PPO.load('/home/pigo/HighwayDRL/final_models/ppo_standard_200k_FORNO.zip'),
-            "victim_spacing": 1,
+            "victim_loaded_model": PPO.load('/home/pigo/HighwayDRL/final_models/ppo_standard_200k_FORNO'),
+            "victim_spacing": 1.5,
             "vehicles_density": 0.5,
             
-            "collision_reward": +10
+            "training_total_timesteps": 2e5,
+            
+            "victim_collision_reward": +10,
+            "self_collision_reward": -10
         })
         return config
     
@@ -250,7 +253,7 @@ class MultiAgentDecisionMakingEnv(DecisionMakingEnv):
                                                     speed=25,
                                                     lane_id=self.config['victim_initial_lane_id'],
                                                     spacing=self.config['victim_spacing'])
-        self.victim_vehicle = VictimVehicle(self.road, [150.0, 4.], self.victim_vehicle.heading,\
+        self.victim_vehicle = VictimVehicle(self.road, self.victim_vehicle.position, self.victim_vehicle.heading,\
             self.victim_vehicle.speed, victim_model=self.config['victim_loaded_model'])
         self.road.vehicles.append(self.victim_vehicle)
             
@@ -268,11 +271,12 @@ class MultiAgentDecisionMakingEnv(DecisionMakingEnv):
         self.final_reward = 0
         self.terminal = False
                     
-        victim_collision_reward = self.victim_vehicle.crashed * self.config['collision_reward']
+        self.collision_reward = self.victim_vehicle.crashed * self.config['victim_collision_reward'] \
+            + self.vehicle.crashed * self.config['self_collision_reward']
         
         self.dense_reward = 0
         
-        self.sparse_reward = victim_collision_reward
+        self.sparse_reward = self.collision_reward
         
         self.final_reward += self.dense_reward + self.sparse_reward
         
@@ -284,9 +288,9 @@ class MultiAgentDecisionMakingEnv(DecisionMakingEnv):
     
     def _is_terminal(self) -> bool:
         """The episode is over if the victim vehicle crashed or the time is out."""
-        return self.victim_vehicle.crashed or \
+        return (any([self.victim_vehicle.crashed, self.vehicle.crashed]) or \
             self.steps >= self.config["duration"] or \
-            (self.config["offroad_terminal"] and not self.vehicle.on_road)
+            self.config["offroad_terminal"] and not self.vehicle.on_road)
     
 
 register(
