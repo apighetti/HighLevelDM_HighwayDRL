@@ -501,12 +501,23 @@ class PseudoMultiAgentObservation(ObservationType):
             self.victim_obs_type.observer_vehicle = self.env.victim_vehicle
                     
     def space(self) -> spaces.Space:
-        return spaces.Tuple([self.learner_obs_type.space(), spaces.Discrete(1)])
+        try:
+            return spaces.Dict(dict(
+                    kinematics=self.learner_obs_type.space(),
+                    victim_action=spaces.Discrete(3)
+                ))
+        except AttributeError:
+            return spaces.Space()
+            
+    def observe(self) -> dict:
+        obs = {
+            "kinematics": self.learner_obs_type.observe(),
+            "victim_action": int(self.env.victim_vehicle.victim_action)
+        }
+        return obs
     
-    def observe(self) -> tuple: 
-        return (self.learner_obs_type.observe(), self.env.victim_vehicle.victim_action)
-    
-    def victim_observe(self)
+    def victim_observe(self) -> np.ndarray:
+        return self.victim_obs_type.observe()
     
 
 class TupleObservation(ObservationType):

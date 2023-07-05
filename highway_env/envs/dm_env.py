@@ -202,7 +202,10 @@ class MultiAgentDecisionMakingEnv(DecisionMakingEnv):
     """
     A variant of the original high-level decision-making environment
     with a pseudo-multiagent setting to enable adversarial policy training.
-    """        
+    """
+    
+    def __init__(self, config: dict = None) -> None:
+        super().__init__(config)
 
         
     @classmethod
@@ -216,23 +219,23 @@ class MultiAgentDecisionMakingEnv(DecisionMakingEnv):
                     "vehicles_count": 7
                 }
             },
+            "action": {
+                "type": "DiscreteMetaAction",
+            },
             "controlled_vehicles": 1,
             "victim_initial_lane_id": None,
             "victim_loaded_model": PPO.load('/home/pigo/HighwayDRL/final_models/ppo_standard_200k_FORNO.zip'),
             "victim_spacing": 1,
             "vehicles_density": 0.5,
             
-            "collision_reward": -30,
-            "rml_reward": 0.8,
-            "high_speed_reward": 0,
-            "reward_speed_range": [30, 36]
+            "collision_reward": +10
         })
         return config
     
     def reset(self) -> Observation:
         self.obs = super().reset()
-        self.victim_vehicle.update_obs(self.obs[1])
-        return self.obs[0]
+        self.victim_vehicle.update_obs(self.observation_type.victim_observe())
+        return self.obs
         
     
     def _reset(self) -> None:
@@ -253,19 +256,37 @@ class MultiAgentDecisionMakingEnv(DecisionMakingEnv):
             
     def step(self, action: Action):
         self.obs, reward, terminal, info = super().step(action)
-        self.victim_vehicle.update_obs(self.obs[1])
-        return self.obs[0], reward, terminal, info
+        self.victim_vehicle.update_obs(self.observation_type.victim_observe())
+        return self.obs, reward, terminal, info
     
     def _reward(self, action: Action) -> float:
+        
+        # Reset rewards
+        self.dense_reward = 0
+        self.collision_reward = 0
+        self.sparse_reward = 0
+        self.final_reward = 0
+        self.terminal = False
+                    
         victim_collision_reward = self.victim_vehicle.crashed * self.config['collision_reward']
         
         self.dense_reward = 0
         
         self.sparse_reward = victim_collision_reward
         
-        self.final_reward = self.dense_reward + self.sparse_reward
+        self.final_reward += self.dense_reward + self.sparse_reward
         
+        if self._is_terminal():
+            self.terminal = True
+            
+        self.final_reward = 0 if not self.vehicle.on_road else self.final_reward        
         return self.final_reward
+    
+    def _is_terminal(self) -> bool:
+        """The episode is over if the victim vehicle crashed or the time is out."""
+        return self.victim_vehicle.crashed or \
+            self.steps >= self.config["duration"] or \
+            (self.config["offroad_terminal"] and not self.vehicle.on_road)
     
 
 register(

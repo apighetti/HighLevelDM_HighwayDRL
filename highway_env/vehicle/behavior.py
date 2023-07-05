@@ -556,7 +556,7 @@ class VictimVehicle(DecisionMakingVehicle):
                  my_lane: Optional[int] = 0,
                  obs: Optional[Tuple] = None,
                  victim_model: PPO = None,
-                 victim_action: Optional[int] = 9999):
+                 victim_action: Optional[int] = 0):
         super().__init__(road, position, heading, speed, target_lane_index, target_speed, target_speeds, front_vehicle, velocity_integral, prev_velocity, acc_flag, rml_flag, overtake_flag, throttle,route,
                             current_action, my_lane, timer)
         self.obs = obs

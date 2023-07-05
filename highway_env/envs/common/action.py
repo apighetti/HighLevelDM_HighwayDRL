@@ -320,33 +320,6 @@ class DecisionMakingAction(ActionType):
     def act(self, action: int) -> None:
         self.controlled_vehicle.act(self.actions[action])
         
-
-class PseudoMultiAgentAction(ActionType):
-    def __init__(self,
-                 env: 'AbstractEnv',
-                 action_config: dict,
-                 **kwargs) -> None:
-        super().__init__(env)
-        self.action_config = action_config
-        self.learner_action_type = action_factory(self.env, self.action_config)
-        self.victim_action_type = action_factory(self.env, self.action_config)
-        if self.env.controlled_vehicles and self.env.victim_vehicle:
-            self.learner_action_type.controlled_vehicle = self.env.controlled_vehicles[0]
-            self.victim_action_type.controlled_vehicle = self.env.victim_vehicle
-
-    def space(self) -> spaces.Space:
-        return spaces.Tuple([self.learner_action_type.space(), self.victim_action_type.space()])
-
-    @property
-    def vehicle_class(self) -> Callable:
-        return action_factory(self.env, self.action_config).vehicle_class
-
-    # def act(self, action: Action) -> None:
-    #     assert isinstance(action, tuple)
-    #     for agent_action, action_type in zip(action, self.action_types):
-    #         self.learner_action_type.act(agent_action)
-
-
 def action_factory(env: 'AbstractEnv', config: dict) -> ActionType:
     if config["type"] == "ContinuousAction":
         return ContinuousAction(env, **config)
@@ -356,8 +329,6 @@ def action_factory(env: 'AbstractEnv', config: dict) -> ActionType:
         return DiscreteMetaAction(env, **config)
     elif config["type"] == "MultiAgentAction":
         return MultiAgentAction(env, **config)
-    elif config["type"] == "PseudoMultiAgentAction":
-        return PseudoMultiAgentAction(env, **config)
     elif config["type"] == "DecisionMakingAction":
         return DecisionMakingAction(env, **config)
     else:
