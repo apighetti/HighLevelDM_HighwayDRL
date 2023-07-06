@@ -96,22 +96,22 @@ class ControlledVehicle(Vehicle):
         self.follow_road()
         if action == "FASTER":
             self.target_speed += self.DELTA_SPEED
-            # self.current_action = "FASTER"
+            self.current_action = "FASTER"
         elif action == "SLOWER":
             self.target_speed -= self.DELTA_SPEED
-            # self.current_action = "SLOWER"
+            self.current_action = "SLOWER"
         elif action == "LANE_RIGHT":
             _from, _to, _id = self.target_lane_index
             target_lane_index = _from, _to, np.clip(_id + 1, 0, len(self.road.network.graph[_from][_to]) - 1)
             if self.road.network.get_lane(target_lane_index).is_reachable_from(self.position):
                 self.target_lane_index = target_lane_index
-            # self.current_action = "LANE_RIGHT"
+            self.current_action = "LANE_RIGHT"
         elif action == "LANE_LEFT":
             _from, _to, _id = self.target_lane_index
             target_lane_index = _from, _to, np.clip(_id - 1, 0, len(self.road.network.graph[_from][_to]) - 1)
             if self.road.network.get_lane(target_lane_index).is_reachable_from(self.position):
                 self.target_lane_index = target_lane_index
-            # self.current_action = "LANE_LEFT"
+            self.current_action = "LANE_LEFT"
                             
         if self.phy_action:
             action = self.phy_action if action == "ACC" else \
@@ -265,10 +265,10 @@ class MDPVehicle(ControlledVehicle):
         """
         if action == "FASTER":
             self.speed_index = self.speed_to_index(self.speed) + 1
-            # self.current_action = "FASTER"
+            self.current_action = "FASTER"
         elif action == "SLOWER":
             self.speed_index = self.speed_to_index(self.speed) - 1
-            # self.current_action = "SLOWER"
+            self.current_action = "SLOWER"
         else:
             super().act(action)
 

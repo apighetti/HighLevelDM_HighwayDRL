@@ -2,6 +2,7 @@ from distutils.command.config import config
 import random
 from gym.envs.registration import register
 import numpy as np
+import math
 
 from highway_env import utils
 from highway_env.envs.common.abstract import AbstractEnv,Observation
@@ -206,6 +207,7 @@ class MultiAgentDecisionMakingEnv(DecisionMakingEnv):
     
     def __init__(self, config: dict = None) -> None:
         super().__init__(config)
+        self.terminal = False
 
         
     @classmethod
@@ -223,15 +225,19 @@ class MultiAgentDecisionMakingEnv(DecisionMakingEnv):
                 "type": "DiscreteMetaAction",
             },
             "controlled_vehicles": 1,
+            "lanes_count": 3,
             "victim_initial_lane_id": None,
             "victim_loaded_model": PPO.load('/home/pigo/HighwayDRL/final_models/ppo_standard_200k_FORNO'),
             "victim_spacing": 1.5,
             "vehicles_density": 0.5,
             
-            "training_total_timesteps": 2e5,
+            "training_total_timesteps": 3e5,
+            
+            "distance_to_victim_reward": -0.1,
             
             "victim_collision_reward": +10,
-            "self_collision_reward": -10
+            "self_collision_reward": -5,
+            "game_over_reward": -5
         })
         return config
     
@@ -253,7 +259,7 @@ class MultiAgentDecisionMakingEnv(DecisionMakingEnv):
                                                     speed=25,
                                                     lane_id=self.config['victim_initial_lane_id'],
                                                     spacing=self.config['victim_spacing'])
-        self.victim_vehicle = VictimVehicle(self.road, self.victim_vehicle.position, self.victim_vehicle.heading,\
+        self.victim_vehicle = VictimVehicle(self.road, [self.vehicle.position[0]-50, self.vehicle.position[1]] , self.victim_vehicle.heading,\
             self.victim_vehicle.speed, victim_model=self.config['victim_loaded_model'])
         self.road.vehicles.append(self.victim_vehicle)
             
@@ -265,24 +271,31 @@ class MultiAgentDecisionMakingEnv(DecisionMakingEnv):
     def _reward(self, action: Action) -> float:
         
         # Reset rewards
+        self.distance_to_victim_reward = 0
         self.dense_reward = 0
         self.collision_reward = 0
         self.sparse_reward = 0
         self.final_reward = 0
         self.terminal = False
-                    
+        
+                
+        euc_distance = math.sqrt((self.vehicle.position[0] - self.victim_vehicle.position[0])**2 + (self.vehicle.position[1] - self.victim_vehicle.position[1])**2)
+        
+        self.distance_to_victim_reward =  np.interp(euc_distance, (0, 80), (0, 1)) * self.config['distance_to_victim_reward']
+        
+        self.dense_reward = self.distance_to_victim_reward
+        
         self.collision_reward = self.victim_vehicle.crashed * self.config['victim_collision_reward'] \
-            + self.vehicle.crashed * self.config['self_collision_reward']
+            + self.vehicle.crashed * self.config['self_collision_reward']        
         
-        self.dense_reward = 0
-        
-        self.sparse_reward = self.collision_reward
-        
-        self.final_reward += self.dense_reward + self.sparse_reward
-        
-        if self._is_terminal():
+        if self._is_terminal():            
+            self.sparse_reward = self.collision_reward if self.collision_reward > 0 \
+                else self.config['game_over_reward'] + self.collision_reward
+                
             self.terminal = True
             
+        self.final_reward += self.dense_reward + self.sparse_reward
+
         self.final_reward = 0 if not self.vehicle.on_road else self.final_reward        
         return self.final_reward
     

@@ -5,7 +5,7 @@ import pygame
 
 from highway_env.envs.common.action import ActionType, DecisionMakingAction, DiscreteMetaAction, ContinuousAction
 from highway_env.road.graphics import WorldSurface, RoadGraphics
-from highway_env.vehicle.controller import DecisionMakingVehicle
+from highway_env.vehicle.controller import DecisionMakingVehicle, MDPVehicle
 from highway_env.vehicle.graphics import VehicleGraphics
 from highway_env import utils
 
@@ -236,7 +236,7 @@ class ObservationGraphics(object):
         from highway_env.envs.common.observation import LidarObservation
         if isinstance(obs, LidarObservation):
             cls.display_grid(obs, sim_surface)
-        elif isinstance(obs.observer_vehicle, DecisionMakingVehicle): # Display vehicle speeds for testing purposes
+        elif isinstance(obs.observer_vehicle, MDPVehicle): # Display vehicle speeds for testing purposes
             myFont = pygame.font.SysFont("Arial", 18)
 
             egoDisplay = myFont.render("Ego vehicle speed: "+str(round(obs.observer_vehicle.speed*3.6, 2))+" km/h", 1, (255, 255, 255))
@@ -249,7 +249,7 @@ class ObservationGraphics(object):
 
 
 
-            if (obs.observer_vehicle.front_vehicle):
+            if (isinstance(obs.observer_vehicle, DecisionMakingVehicle) and obs.observer_vehicle.front_vehicle):
                 fvDisplay = myFont.render("Front vehicle speed: "+str(round(obs.observer_vehicle.front_vehicle.speed*3.6, 2))+" km/h", 1, (255, 255, 255))
                 clearance = obs.observer_vehicle.front_vehicle.position[0] - obs.observer_vehicle.position[0]
                 clearance_display = myFont.render("Headway: " + str(round(clearance,2)) + " m", 1, (255,255,255))

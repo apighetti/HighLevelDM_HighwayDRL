@@ -7,6 +7,7 @@ class TensorboardCallback(BaseCallback):
         self.high_speed_reward = 0
         self.rml_reward = 0
         self.km_dense_reward = 0
+        self.distance_to_victim_reward = 0
         self.dense_reward = 0
         
         self.collision_reward = 0
@@ -15,7 +16,7 @@ class TensorboardCallback(BaseCallback):
         
         self.cumulative_reward = 0
         
-        self.num_episodes = 50
+        self.num_episodes = 5
         self.episodes_count = 0
         self.episode_steps = 0
         self.episodes_lens = np.zeros(self.num_episodes)
@@ -26,6 +27,7 @@ class TensorboardCallback(BaseCallback):
         self.high_speed_reward += self.training_env.get_attr('high_speed_reward')[0]
         self.rml_reward += self.training_env.get_attr('rml_reward')[0]
         self.km_dense_reward += self.training_env.get_attr('km_dense_reward')[0]
+        self.distance_to_victim_reward += self.training_env.get_attr('distance_to_victim_reward')[0]
         self.dense_reward += self.training_env.get_attr('dense_reward')[0]
         
         self.collision_reward += self.training_env.get_attr('collision_reward')[0]
@@ -45,6 +47,7 @@ class TensorboardCallback(BaseCallback):
             self.logger.record('mean_reward/high_speed', self.high_speed_reward / self.num_episodes)
             self.logger.record('mean_reward/rml', self.rml_reward / self.num_episodes)
             self.logger.record('mean_reward/km_dense', self.km_dense_reward / self.num_episodes)
+            self.logger.record('mean_reward/distance_to_victim', self.distance_to_victim_reward)
             self.logger.record('mean_reward/dense', self.dense_reward / self.num_episodes)
             
             self.logger.record('mean_reward/collision', self.collision_reward / self.num_episodes)
@@ -58,6 +61,7 @@ class TensorboardCallback(BaseCallback):
             self.high_speed_reward = 0
             self.rml_reward = 0
             self.km_dense_reward = 0
+            self.distance_to_victim_reward = 0
             self.dense_reward = 0
             
             self.collision_reward = 0
