@@ -7,7 +7,6 @@ from highway_env.envs.common.action import ActionType, DecisionMakingAction, Dis
 from highway_env.road.graphics import WorldSurface, RoadGraphics
 from highway_env.vehicle.controller import DecisionMakingVehicle, MDPVehicle
 from highway_env.vehicle.graphics import VehicleGraphics
-from highway_env import utils
 
 
 if TYPE_CHECKING:
@@ -236,34 +235,38 @@ class ObservationGraphics(object):
         from highway_env.envs.common.observation import LidarObservation
         if isinstance(obs, LidarObservation):
             cls.display_grid(obs, sim_surface)
-        elif isinstance(obs.observer_vehicle, MDPVehicle): # Display vehicle speeds for testing purposes
+        elif isinstance(obs.observer_vehicle, DecisionMakingVehicle): # Display vehicle speeds for testing purposes
             myFont = pygame.font.SysFont("Arial", 18)
 
             egoDisplay = myFont.render("Ego vehicle speed: "+str(round(obs.observer_vehicle.speed*3.6, 2))+" km/h", 1, (255, 255, 255))
             sim_surface.blit(egoDisplay, (20,10))
             acceleration_display = myFont.render("Throttle: " + str(round(obs.observer_vehicle.throttle,3)) + " m/s\u00b2", 1, (255,255,255))
             sim_surface.blit(acceleration_display, (20,150))
-            action_display = myFont.render(f"Last action: {obs.observer_vehicle.current_action}", 1, (255,255,0))
-            if obs.observer_vehicle.current_action != None:
+            action_display = myFont.render(f"Last action: {obs.observer_vehicle.current_action_hl}", 1, (255,255,0))
+            if obs.observer_vehicle.current_action_hl != None:
                 sim_surface.blit(action_display, (20,225))
 
-
-
-            if (isinstance(obs.observer_vehicle, DecisionMakingVehicle) and obs.observer_vehicle.front_vehicle):
+            if obs.observer_vehicle.front_vehicle:
                 fvDisplay = myFont.render("Front vehicle speed: "+str(round(obs.observer_vehicle.front_vehicle.speed*3.6, 2))+" km/h", 1, (255, 255, 255))
                 clearance = obs.observer_vehicle.front_vehicle.position[0] - obs.observer_vehicle.position[0]
                 clearance_display = myFont.render("Headway: " + str(round(clearance,2)) + " m", 1, (255,255,255))
-                
-                # try:
-                #     with open('speed_throttle.csv','a') as f:
-                #         f.write(f"{str(obs.observer_vehicle.speed)},{str(obs.observer_vehicle.front_vehicle.speed)},{str(obs.observer_vehicle.throttle)}\n")
-                # except KeyboardInterrupt:
-                #     f.close()
+
                 timegap_display = myFont.render("Time gap: " + \
                     str(round(clearance/(obs.observer_vehicle.speed) - obs.observer_vehicle.TTG,2)) + " s" , 1 ,(255, 255, 255))
                 sim_surface.blit(fvDisplay, (20,30))
                 sim_surface.blit(clearance_display, (20,175))
                 sim_surface.blit(timegap_display, (20,200))
+        elif isinstance(obs.observer_vehicle, MDPVehicle):
+                myFont = pygame.font.SysFont("Arial", 18)
+
+                egoDisplay = myFont.render("Ego vehicle speed: "+str(round(obs.observer_vehicle.speed*3.6, 2))+" km/h", 1, (255, 255, 255))
+                sim_surface.blit(egoDisplay, (20,10))
+                acceleration_display = myFont.render("Throttle: " + str(round(obs.observer_vehicle.throttle,3)) + " m/s\u00b2", 1, (255,255,255))
+                sim_surface.blit(acceleration_display, (20,150))
+                action_display = myFont.render(f"Last action: {obs.observer_vehicle.current_action}", 1, (255,255,0))
+                if obs.observer_vehicle.current_action != None:
+                    sim_surface.blit(action_display, (20,225))
+                
         
 
     @classmethod
@@ -277,3 +280,11 @@ class ObservationGraphics(object):
                                    lidar_observation.origin[1] + r[i] * np.sin(psi[i])))
                   for i in range(np.size(psi))]
         pygame.draw.lines(surface, ObservationGraphics.COLOR, True, points, 1)
+
+
+                
+# try:
+#     with open('speed_throttle.csv','a') as f:
+#         f.write(f"{str(obs.observer_vehicle.speed)},{str(obs.observer_vehicle.front_vehicle.speed)},{str(obs.observer_vehicle.throttle)}\n")
+# except KeyboardInterrupt:
+#     f.close()

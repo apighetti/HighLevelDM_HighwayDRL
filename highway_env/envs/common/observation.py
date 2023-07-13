@@ -486,7 +486,7 @@ class MultiAgentObservation(ObservationType):
     def observe(self) -> tuple:
         return tuple(obs_type.observe() for obs_type in self.agents_observation_types)
 
-class PseudoMultiAgentObservation(ObservationType):
+class AdversarialPhaseOneObservation(ObservationType):
     def __init__(self,
                  env: 'AbstractEnv',
                  observation_config: dict,
@@ -495,16 +495,16 @@ class PseudoMultiAgentObservation(ObservationType):
         self.observation_config = observation_config
         
         self.learner_obs_type = observation_factory(self.env, self.observation_config)
-        self.victim_obs_type = observation_factory(self.env, self.observation_config)
-        if self.env.controlled_vehicles and self.env.victim_vehicle:
+        self.frozen_obs_type = observation_factory(self.env, self.observation_config)
+        if self.env.controlled_vehicles and self.env.frozen_vehicle:
             self.learner_obs_type.observer_vehicle = self.env.controlled_vehicles[0]
-            self.victim_obs_type.observer_vehicle = self.env.victim_vehicle
+            self.frozen_obs_type.observer_vehicle = self.env.frozen_vehicle
                     
     def space(self) -> spaces.Space:
         try:
             return spaces.Dict(dict(
                     kinematics=self.learner_obs_type.space(),
-                    victim_action=spaces.Discrete(3)
+                    frozen_action=spaces.Discrete(3)
                 ))
         except AttributeError:
             return spaces.Space()
@@ -512,14 +512,42 @@ class PseudoMultiAgentObservation(ObservationType):
     def observe(self) -> dict:
         obs = {
             "kinematics": self.learner_obs_type.observe(),
-            "victim_action": int(self.env.victim_vehicle.victim_action)
+            "frozen_action": int(self.env.frozen_vehicle.frozen_action)
         }
         return obs
     
-    def victim_observe(self) -> np.ndarray:
-        return self.victim_obs_type.observe()
+    def frozen_observe(self,action) -> np.ndarray:
+        return self.frozen_obs_type.observe()
+   
     
-
+class AdversarialPhaseTwoObservation(ObservationType):
+    def __init__(self,
+                 env: 'AbstractEnv',
+                 observation_config: dict,
+                 **kwargs) -> None:
+        super().__init__(env)     
+        self.observation_config = observation_config
+        
+        self.learner_obs_type = observation_factory(self.env, self.observation_config)
+        self.frozen_obs_type = observation_factory(self.env, self.observation_config)
+        if self.env.controlled_vehicles and self.env.frozen_vehicle:
+            self.learner_obs_type.observer_vehicle = self.env.controlled_vehicles[0]
+            self.frozen_obs_type.observer_vehicle = self.env.frozen_vehicle
+        
+    def space(self) -> spaces.Space:
+        return self.learner_obs_type.space()
+            
+    def observe(self) -> np.ndarray:
+        return self.learner_obs_type.observe()
+    
+    def frozen_observe(self,action) -> dict:
+        obs = {
+            "kinematics": self.frozen_obs_type.observe(),
+            "victim_action": int(action)
+        }
+        return obs
+ 
+ 
 class TupleObservation(ObservationType):
     def __init__(self,
                  env: 'AbstractEnv',
@@ -669,8 +697,10 @@ def observation_factory(env: 'AbstractEnv', config: dict) -> ObservationType:
         return AttributesObservation(env, **config)
     elif config["type"] == "MultiAgentObservation":
         return MultiAgentObservation(env, **config)
-    elif config["type"] == "PseudoMultiAgentObservation":
-        return PseudoMultiAgentObservation(env, **config)
+    elif config["type"] == "AdversarialPhaseOneObservation":
+        return AdversarialPhaseOneObservation(env, **config)
+    elif config["type"] == "AdversarialPhaseTwoObservation":
+        return AdversarialPhaseTwoObservation(env, **config)
     elif config["type"] == "TupleObservation":
         return TupleObservation(env, **config)
     elif config["type"] == "LidarObservation":

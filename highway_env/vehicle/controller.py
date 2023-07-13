@@ -222,7 +222,7 @@ class ControlledVehicle(Vehicle):
 class MDPVehicle(ControlledVehicle):
 
     """A controlled vehicle with a specified discrete range of allowed target speeds."""
-    DEFAULT_TARGET_SPEEDS = np.linspace(20, 36, 5)
+    DEFAULT_TARGET_SPEEDS = np.linspace(15, 45, 5)
 
     def __init__(self,
                  road: Road,
@@ -346,7 +346,6 @@ class MDPVehicle(ControlledVehicle):
         super().step(dt)
     
 
-##### Thesis add-on #####
 class DecisionMakingVehicle(MDPVehicle):
         
     """An MDP vehicle which performs high-level decision making actions."""
@@ -372,7 +371,8 @@ class DecisionMakingVehicle(MDPVehicle):
                  overtake_flag: Optional[Boolean] = False,
                  throttle: Optional[float] = 0.0,
                  timer: Optional[int] = 0,
-                 current_action: Optional[Union[dict, str]] = None,
+                 current_action: Optional[str] = None,
+                 current_action_hl: Optional[str] = None,
                  my_lane: Optional[int] = 0
                  ) -> None:
                  
@@ -390,7 +390,7 @@ class DecisionMakingVehicle(MDPVehicle):
         self.velocity_integral = velocity_integral
         self.prev_velocity = prev_velocity
         self.my_lane = my_lane
-        self.current_action = current_action
+        self.current_action_hl = current_action_hl
         self.pid_speed = PID(0.5, 0, 0)
         self.pid_time = PID(2,0,0)
 
@@ -411,7 +411,7 @@ class DecisionMakingVehicle(MDPVehicle):
 
             if(not self.acc_flag):
                 self.acc_flag = True
-                self.current_action = "ACC"
+                self.current_action_hl = "ACC"
                         
         elif action == "OVERTAKE":
             if(self.acc_flag or self.rml_flag):
@@ -421,7 +421,7 @@ class DecisionMakingVehicle(MDPVehicle):
             if(not self.overtake_flag):
                 self.overtake_flag = True
                 self.my_lane = self.lane_index[2] - 1
-                self.current_action = "OVERTAKE"
+                self.current_action_hl = "OVERTAKE"
 
         elif action == "RIGHTMOSTLANE":
             if(self.acc_flag or self.overtake_flag):
@@ -432,7 +432,7 @@ class DecisionMakingVehicle(MDPVehicle):
                 self.rml_flag = True
                 self.timer = -1
                 self.phy_action = None
-                self.current_action = "RML"
+                self.current_action_hl = "RML"
         else:
             super().act(action)
             return

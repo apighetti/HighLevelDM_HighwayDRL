@@ -11,7 +11,7 @@ from highway_env.road.road import Road, RoadNetwork
 from highway_env.utils import near_split
 from highway_env.vehicle.controller import ControlledVehicle
 from highway_env.vehicle.kinematics import Vehicle
-from highway_env.vehicle.behavior import VictimVehicle
+from highway_env.vehicle.behavior import FrozenModelVehicle
 from highway_env.vehicle.objects import LaneIndex
 from stable_baselines3 import PPO
 
@@ -59,23 +59,23 @@ class DecisionMakingEnv(AbstractEnv):
             "simulation_frequency": 5,
             "policy_frequency": 1,
             "controlled_vehicles": 1,
-            "duration": 60,  # [s*2]
+            "duration": 80,  # [s*2]
             "initial_lane_id": None,
             "ego_spacing": 1,
-            "vehicles_density": 0.5,
+            "vehicles_density": 0.6,
             "offroad_terminal": False,
             
-            "collision_reward": -30,
+            "collision_reward": -1,
             # "km_sparse_reward": 10,
-            "rml_reward": 0.8,
+            "rml_reward": 0.2,
             # "km_dense_reward": 0.6,
-            "high_speed_reward": 0,
+            "high_speed_reward": 0.4,
             "reward_speed_range": [30, 36]
         })
         return config
 
     def _reset(self) -> None:
-        w = [0.1, 0.4, 0.5]
+        w = [0.2, 0.4, 0.5]
         self._create_road()
         self._create_vehicles(w)
 
@@ -208,6 +208,7 @@ class MultiAgentDecisionMakingEnv(DecisionMakingEnv):
     def __init__(self, config: dict = None) -> None:
         super().__init__(config)
         self.terminal = False
+        # self.position_terminal = False
 
         
     @classmethod
@@ -215,7 +216,7 @@ class MultiAgentDecisionMakingEnv(DecisionMakingEnv):
         config = super().default_config()
         config.update({
             "observation": {
-                "type": "PseudoMultiAgentObservation",
+                "type": "AdversarialPhaseOneObservation",
                 "observation_config": {
                     "type": "Kinematics",
                     "vehicles_count": 7
@@ -226,27 +227,27 @@ class MultiAgentDecisionMakingEnv(DecisionMakingEnv):
             },
             "controlled_vehicles": 1,
             "lanes_count": 3,
-            "victim_initial_lane_id": None,
-            "victim_loaded_model": PPO.load('/home/pigo/HighwayDRL/final_models/ppo_standard_200k_FORNO'),
-            "victim_spacing": 1.5,
+            "frozen_initial_lane_id": None,
+            "frozen_loaded_model": PPO.load('/home/elios/pighetti/HighwayDRL/final_models/ppo_standard_200k_FORNO'),
+            "frozen_spacing": 1.5,
             "vehicles_density": 0.5,
             
-            "training_total_timesteps": 3e5,
+            "training_total_timesteps": 6e5,
             
-            "distance_to_victim_reward": -0.1,
+            "distance_to_frozen_reward": -0.2,
+            # "high_speed_reward": 0.5,
             
-            "victim_collision_reward": +10,
-            "self_collision_reward": -5,
-            "game_over_reward": -5
+            "frozen_collision_reward": +10,
+            "self_collision_reward": -10,
+            "overtaken_reward": -10
         })
         return config
     
     def reset(self) -> Observation:
         self.obs = super().reset()
-        self.victim_vehicle.update_obs(self.observation_type.victim_observe())
+        self.frozen_vehicle.update_obs(self.observation_type.frozen_observe(1))
         return self.obs
         
-    
     def _reset(self) -> None:
         w = [0.1, 0.4, 0.5]
         self._create_road()
@@ -254,54 +255,66 @@ class MultiAgentDecisionMakingEnv(DecisionMakingEnv):
         
     def _create_vehicles(self, vehicle_distribution) -> None:
         super()._create_vehicles(vehicle_distribution)
+        position_range = np.arange(-80,-50) # Adversary spawns only in front of the frozen agent 
+        frozen_spawn_distance = random.choice(position_range)
 
-        self.victim_vehicle = VictimVehicle.create_random(self.road,
+        self.frozen_vehicle = FrozenModelVehicle.create_random(self.road,
                                                     speed=25,
-                                                    lane_id=self.config['victim_initial_lane_id'],
-                                                    spacing=self.config['victim_spacing'])
-        self.victim_vehicle = VictimVehicle(self.road, [self.vehicle.position[0]-50, self.vehicle.position[1]] , self.victim_vehicle.heading,\
-            self.victim_vehicle.speed, victim_model=self.config['victim_loaded_model'])
-        self.road.vehicles.append(self.victim_vehicle)
+                                                    lane_id=self.config['frozen_initial_lane_id'],
+                                                    spacing=self.config['frozen_spacing'])
+        self.frozen_vehicle = FrozenModelVehicle(self.road, [self.vehicle.position[0]+frozen_spawn_distance, self.vehicle.position[1]] , self.frozen_vehicle.heading,\
+            self.frozen_vehicle.speed, frozen_model=self.config['frozen_loaded_model'])
+        self.road.vehicles.append(self.frozen_vehicle)
             
     def step(self, action: Action):
         self.obs, reward, terminal, info = super().step(action)
-        self.victim_vehicle.update_obs(self.observation_type.victim_observe())
-        return self.obs, reward, terminal, info
+        self.frozen_vehicle.update_obs(self.observation_type.frozen_observe(action))
+        return self.obs, reward, terminal, info 
+    
     
     def _reward(self, action: Action) -> float:
         
-        # Reset rewards
-        self.distance_to_victim_reward = 0
-        self.dense_reward = 0
-        self.collision_reward = 0
-        self.sparse_reward = 0
-        self.final_reward = 0
-        self.terminal = False
-        
-                
-        euc_distance = math.sqrt((self.vehicle.position[0] - self.victim_vehicle.position[0])**2 + (self.vehicle.position[1] - self.victim_vehicle.position[1])**2)
-        
-        self.distance_to_victim_reward =  np.interp(euc_distance, (0, 80), (0, 1)) * self.config['distance_to_victim_reward']
-        
-        self.dense_reward = self.distance_to_victim_reward
-        
-        self.collision_reward = self.victim_vehicle.crashed * self.config['victim_collision_reward'] \
-            + self.vehicle.crashed * self.config['self_collision_reward']        
-        
-        if self._is_terminal():            
-            self.sparse_reward = self.collision_reward if self.collision_reward > 0 \
-                else self.config['game_over_reward'] + self.collision_reward
-                
-            self.terminal = True
+        if self.config['action']['type'] == "DecisionMakingAction":
+            return super()._reward(action)
+        else:
+            # Reset rewards
+            self.distance_to_frozen_reward = 0
+            self.high_speed_reward = 0
+            self.dense_reward = 0
+            self.collision_reward = 0
+            self.overtaken_reward = 0
+            self.sparse_reward = 0
+            self.final_reward = 0
+            self.terminal = False
+            self.position_terminal = False
             
-        self.final_reward += self.dense_reward + self.sparse_reward
+            # euc_distance = math.sqrt((self.vehicle.position[0] - self.frozen_vehicle.position[0])**2 + (self.vehicle.position[1] - self.frozen_vehicle.position[1])**2)
+            # self.distance_to_frozen_reward =  np.interp(euc_distance, (0, 40), (0, 1)) * self.config['distance_to_frozen_reward']
+            
+            forward_speed = self.frozen_vehicle.speed * np.cos(self.frozen_vehicle.heading)
+            scaled_speed = utils.lmap(forward_speed, self.config["reward_speed_range"], [0, 1])
+            self.high_speed_reward = -(self.config["high_speed_reward"] * np.clip(scaled_speed, 0, 1))
+            
+            self.dense_reward = self.high_speed_reward
+            
+            self.position_terminal = self.frozen_vehicle.position[0] > self.vehicle.position[0] + 5
+            self.overtaken_reward = self.config['overtaken_reward'] * self.position_terminal
+                    
+            self.collision_reward = (self.frozen_vehicle.crashed and self.frozen_vehicle.position[0] < self.vehicle.position[0] - 5) * self.config['frozen_collision_reward'] \
+                + self.vehicle.crashed * self.config['self_collision_reward'] # for the NPV environment
+            
+            if self._is_terminal():  
+                self.sparse_reward = self.collision_reward + self.overtaken_reward
+                self.terminal = True
+                
+            self.final_reward += self.dense_reward + self.sparse_reward
 
-        self.final_reward = 0 if not self.vehicle.on_road else self.final_reward        
-        return self.final_reward
-    
+            self.final_reward = 0 if not self.vehicle.on_road else self.final_reward        
+            return self.final_reward
+        
     def _is_terminal(self) -> bool:
-        """The episode is over if the victim vehicle crashed or the time is out."""
-        return (any([self.victim_vehicle.crashed, self.vehicle.crashed]) or \
+        """The episode is over any of the controlled vehicles crashed, the frozen vehicle surpassed the adversary (2 player game) or the time is out."""
+        return (any([self.frozen_vehicle.crashed, self.vehicle.crashed]) or \
             self.steps >= self.config["duration"] or \
             self.config["offroad_terminal"] and not self.vehicle.on_road)
     

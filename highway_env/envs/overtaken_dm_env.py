@@ -32,10 +32,10 @@ class OVTKDecisionMakingEnv(AbstractEnv):
         config.update({
             "observation": {
                 "type": "Kinematics",
-                "vehicles_count": 8
+                "vehicles_count": 7
             },
             "action": {
-                "type": "DiscreteMetaAction",
+                "type": "DecisionMakingAction",
             },
             "other_vehicles_type": "highway_env.vehicle.behavior.HazardousVehicle",
             "lanes_count": 2,
