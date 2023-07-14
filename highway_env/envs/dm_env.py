@@ -59,15 +59,15 @@ class DecisionMakingEnv(AbstractEnv):
             "simulation_frequency": 5,
             "policy_frequency": 1,
             "controlled_vehicles": 1,
-            "duration": 80,  # [s*2]
+            "duration": 60,  # [s*2]
             "initial_lane_id": None,
             "ego_spacing": 1,
             "vehicles_density": 0.6,
             "offroad_terminal": False,
             
-            "collision_reward": -1,
+            "collision_reward": -10,
             # "km_sparse_reward": 10,
-            "rml_reward": 0.2,
+            "rml_reward": 0.3,
             # "km_dense_reward": 0.6,
             "high_speed_reward": 0.4,
             "reward_speed_range": [30, 36]

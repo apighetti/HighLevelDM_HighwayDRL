@@ -24,7 +24,8 @@ class PrintMetrics():
         series = pd.Series([env_name, round(episode_duration), 1 if collision else 0, round(km_travelled, 2), round(mean_speed, 2), round(mean_acceleration, 3), round(
             mean_deceleration, 3), decision_change_num, left_lane_change_num, right_lane_change_num], name=curr_episode_num, index=self.episode_df.columns)
 
-        self.episode_df = self.episode_df.append(series)
+        self.episode_df = pd.concat([self.episode_df, pd.DataFrame([series])], ignore_index=True)
+        
         
         # self.episode_df = pd.concat([self.episode_df, pd.DataFrame.from_records(series)])
 
