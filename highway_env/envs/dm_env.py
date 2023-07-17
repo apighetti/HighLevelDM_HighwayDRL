@@ -75,7 +75,7 @@ class DecisionMakingEnv(AbstractEnv):
         return config
 
     def _reset(self) -> None:
-        w = [0.2, 0.4, 0.5]
+        w = [0.1, 0.4, 0.5]
         self._create_road()
         self._create_vehicles(w)
 
@@ -216,23 +216,23 @@ class MultiAgentDecisionMakingEnv(DecisionMakingEnv):
         config = super().default_config()
         config.update({
             "observation": {
-                "type": "AdversarialPhaseOneObservation",
+                "type": "AdversarialPhaseTwoObservation",
                 "observation_config": {
                     "type": "Kinematics",
                     "vehicles_count": 7
                 }
             },
             "action": {
-                "type": "DiscreteMetaAction",
+                "type": "DecisionMakingAction",
             },
             "controlled_vehicles": 1,
             "lanes_count": 3,
             "frozen_initial_lane_id": None,
-            "frozen_loaded_model": PPO.load('/home/elios/pighetti/HighwayDRL/final_models/ppo_standard_200k_FORNO'),
+            "frozen_loaded_model": PPO.load('/home/pigo/projects/HighwayDRL/training_output/models/adv_yesNPV_HP.zip'),
             "frozen_spacing": 1.5,
-            "vehicles_density": 0.5,
+            "vehicles_density": 0.6,
             
-            "training_total_timesteps": 6e5,
+            "training_total_timesteps": 3e5,
             
             "distance_to_frozen_reward": -0.2,
             # "high_speed_reward": 0.5,
@@ -314,9 +314,13 @@ class MultiAgentDecisionMakingEnv(DecisionMakingEnv):
         
     def _is_terminal(self) -> bool:
         """The episode is over any of the controlled vehicles crashed, the frozen vehicle surpassed the adversary (2 player game) or the time is out."""
-        return (any([self.frozen_vehicle.crashed, self.vehicle.crashed]) or \
-            self.steps >= self.config["duration"] or \
-            self.config["offroad_terminal"] and not self.vehicle.on_road)
+        if self.config['action']['type'] == "DecisionMakingAction":
+            return super()._is_terminal()
+        else:
+            return (self.position_terminal or \
+                any([self.frozen_vehicle.crashed, self.vehicle.crashed]) or \
+                self.steps >= self.config["duration"] or \
+                self.config["offroad_terminal"] and not self.vehicle.on_road)
     
 
 register(

@@ -543,7 +543,7 @@ class AdversarialPhaseTwoObservation(ObservationType):
     def frozen_observe(self,action) -> dict:
         obs = {
             "kinematics": self.frozen_obs_type.observe(),
-            "victim_action": int(action)
+            "frozen_action": int(action)
         }
         return obs
  
