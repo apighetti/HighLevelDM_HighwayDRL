@@ -216,19 +216,20 @@ class MultiAgentDecisionMakingEnv(DecisionMakingEnv):
         config = super().default_config()
         config.update({
             "observation": {
-                "type": "AdversarialPhaseTwoObservation",
+                "type": "AdversarialPhaseOneObservation",
                 "observation_config": {
                     "type": "Kinematics",
                     "vehicles_count": 7
                 }
             },
             "action": {
-                "type": "DecisionMakingAction",
+                "type": "DiscreteMetaAction",
             },
             "controlled_vehicles": 1,
             "lanes_count": 3,
             "frozen_initial_lane_id": None,
-            "frozen_loaded_model": PPO.load('/home/pigo/projects/HighwayDRL/training_output/models/adv_yesNPV_HP.zip'),
+            "frozen_loaded_model": PPO.load('/home/pigo/projects/HighwayDRL/training_output/models/victim_retrain_yesNPV_HP.zip'),
+            "frozen_action_type": "DecisionMakingAction",
             "frozen_spacing": 1.5,
             "vehicles_density": 0.6,
             
@@ -263,7 +264,7 @@ class MultiAgentDecisionMakingEnv(DecisionMakingEnv):
                                                     lane_id=self.config['frozen_initial_lane_id'],
                                                     spacing=self.config['frozen_spacing'])
         self.frozen_vehicle = FrozenModelVehicle(self.road, [self.vehicle.position[0]+frozen_spawn_distance, self.vehicle.position[1]] , self.frozen_vehicle.heading,\
-            self.frozen_vehicle.speed, frozen_model=self.config['frozen_loaded_model'])
+            self.frozen_vehicle.speed, frozen_model=self.config['frozen_loaded_model'], frozen_action_type=self.config['frozen_action_type'])
         self.road.vehicles.append(self.frozen_vehicle)
             
     def step(self, action: Action):
@@ -315,7 +316,7 @@ class MultiAgentDecisionMakingEnv(DecisionMakingEnv):
     def _is_terminal(self) -> bool:
         """The episode is over any of the controlled vehicles crashed, the frozen vehicle surpassed the adversary (2 player game) or the time is out."""
         if self.config['action']['type'] == "DecisionMakingAction":
-            return super()._is_terminal()
+            return super()._is_terminal() or self.frozen_vehicle.crashed
         else:
             return (self.position_terminal or \
                 any([self.frozen_vehicle.crashed, self.vehicle.crashed]) or \

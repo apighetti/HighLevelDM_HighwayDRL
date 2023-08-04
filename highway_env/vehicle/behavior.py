@@ -6,11 +6,11 @@ import random
 from highway_env.road.road import Road, Route, LaneIndex
 from highway_env.utils import Vector
 from highway_env.vehicle.controller import ControlledVehicle, DecisionMakingVehicle
-from highway_env.envs.common.action import DiscreteMetaAction
 from highway_env import utils
 from highway_env.vehicle.kinematics import Vehicle
 from highway_env.pid import PID
 from stable_baselines3 import PPO
+from highway_env.envs.common.action import ActionType
 
 class IDMVehicle(ControlledVehicle):
     """
@@ -557,19 +557,21 @@ class FrozenModelVehicle(DecisionMakingVehicle):
                  my_lane: Optional[int] = 0,
                  obs: Optional[Tuple] = None,
                  frozen_model: PPO = None,
-                 frozen_action: Optional[int] = 0):
+                 frozen_action: Optional[int] = 0,
+                 frozen_action_type: Optional[ActionType] = None):
         super().__init__(road, position, heading, speed, target_lane_index, target_speed, target_speeds, front_vehicle, velocity_integral, prev_velocity, acc_flag, rml_flag, overtake_flag, throttle,route,
                             current_action, my_lane, timer)
         self.obs = obs
         self.frozen_model = frozen_model
         self.frozen_action = frozen_action
+        self.frozen_action_type = frozen_action_type
         
     def update_obs(self, n_obs):
         self.obs = n_obs
     
     def act(self, action: Union[dict, str] = None) -> None:
         self.frozen_action, _ = self.frozen_model.predict(self.obs, deterministic=True)
-        if isinstance(self.frozen_model.action_space, DiscreteMetaAction):
+        if self.frozen_action_type == 'DiscreteMetaAction':
             if self.frozen_action == 0:
                 action = 'LANE_LEFT'
             if self.frozen_action == 1:
