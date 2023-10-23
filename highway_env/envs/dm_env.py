@@ -216,20 +216,20 @@ class MultiAgentDecisionMakingEnv(DecisionMakingEnv):
         config = super().default_config()
         config.update({
             "observation": {
-                "type": "AdversarialPhaseOneObservation",
+                "type": "AdversarialPhaseTwoObservation",
                 "observation_config": {
                     "type": "Kinematics",
                     "vehicles_count": 7
                 }
             },
             "action": {
-                "type": "DiscreteMetaAction",
+                "type": "DecisionMakingAction",
             },
             "controlled_vehicles": 1,
             "lanes_count": 3,
             "frozen_initial_lane_id": None,
-            "frozen_loaded_model": PPO.load('/home/pigo/projects/HighwayDRL/training_output/models/victim_retrain_yesNPV_HP.zip'),
-            "frozen_action_type": "DecisionMakingAction",
+            "frozen_loaded_model": PPO.load('/home/pigo/HighwayDRL/training_output/models/adv_yesNPV_DELL.zip'),
+            "frozen_action_type": "DiscreteMetaAction",
             "frozen_spacing": 1.5,
             "vehicles_density": 0.6,
             
@@ -256,7 +256,7 @@ class MultiAgentDecisionMakingEnv(DecisionMakingEnv):
         
     def _create_vehicles(self, vehicle_distribution) -> None:
         super()._create_vehicles(vehicle_distribution)
-        position_range = np.arange(-80,-50) # Adversary spawns only in front of the frozen agent 
+        position_range = np.arange(50,80) # Adversary spawns only in front of the frozen agent 
         frozen_spawn_distance = random.choice(position_range)
 
         self.frozen_vehicle = FrozenModelVehicle.create_random(self.road,
